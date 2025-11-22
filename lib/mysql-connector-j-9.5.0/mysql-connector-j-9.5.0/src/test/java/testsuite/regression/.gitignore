@@ -76,3 +76,6 @@
 /CharsetRegressionTest$TestBug64205QueryInterceptor.class
 /CharsetRegressionTest$TestSetNamesQueryInterceptor.class
 /CharsetRegressionTest.class
+/BlobRegressionTest.class
+/CachedRowsetTest.class
+/CallableStatementRegressionTest.class
