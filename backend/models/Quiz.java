@@ -3,22 +3,59 @@ package backend.models;
 import java.util.Date;
 
 public class Quiz {
-    private String quizId;
+    private int quizId;
+    private int courseId;
     private String title;
-    private Date dueAt;
-    private String status;
+    private String quizType;
+    private Date createdAt;
 
     public Quiz() {}
 
-    public String getQuizId() { return quizId; }
-    public void setQuizId(String quizId) { this.quizId = quizId; }
+    public Quiz(int quizId, int courseId, String title, String quizType, Date createdAt) {
+        this.quizId = quizId;
+        this.courseId = courseId;
+        this.title = title;
+        this.quizType = quizType;
+        this.createdAt = createdAt;
+    }
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public int getQuizId() {
+        return quizId;
+    }
 
-    public Date getDueAt() { return dueAt; }
-    public void setDueAt(Date dueAt) { this.dueAt = dueAt; }
+    public void setQuizId(int quizId) {
+        this.quizId = quizId;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public int getCourseId() {
+        return courseId;
+    }
+
+    public void setCourseId(int courseId) {
+        this.courseId = courseId;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getQuizType() {
+        return quizType;
+    }
+
+    public void setQuizType(String quizType) {
+        this.quizType = quizType;
+    }
+
+    public Date getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(Date createdAt) {
+        this.createdAt = createdAt;
+    }
 }

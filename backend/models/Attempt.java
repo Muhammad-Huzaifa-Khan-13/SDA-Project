@@ -3,30 +3,50 @@ package backend.models;
 import java.util.Date;
 
 public class Attempt {
-    private String attemptId;
-    private String studentId;
-    private String quizId;
-    private Date startedAt;
-    private Date submittedAt;
-    private String status;
+
+    private int attemptId;
+    private int quizId;
+    private int studentId;
+    private Date attemptDate;
 
     public Attempt() {}
 
-    public String getAttemptId() { return attemptId; }
-    public void setAttemptId(String attemptId) { this.attemptId = attemptId; }
+    public Attempt(int attemptId, int quizId, int studentId, Date attemptDate) {
+        this.attemptId = attemptId;
+        this.quizId = quizId;
+        this.studentId = studentId;
+        this.attemptDate = attemptDate;
+    }
 
-    public String getStudentId() { return studentId; }
-    public void setStudentId(String studentId) { this.studentId = studentId; }
+    public int getAttemptId() {
+        return attemptId;
+    }
 
-    public String getQuizId() { return quizId; }
-    public void setQuizId(String quizId) { this.quizId = quizId; }
+    public void setAttemptId(int attemptId) {
+        this.attemptId = attemptId;
+    }
 
-    public Date getStartedAt() { return startedAt; }
-    public void setStartedAt(Date startedAt) { this.startedAt = startedAt; }
+    public int getQuizId() {
+        return quizId;
+    }
 
-    public Date getSubmittedAt() { return submittedAt; }
-    public void setSubmittedAt(Date submittedAt) { this.submittedAt = submittedAt; }
+    public void setQuizId(int quizId) {
+        this.quizId = quizId;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public int getStudentId() {
+        return studentId;
+    }
+
+    public void setStudentId(int studentId) {
+        this.studentId = studentId;
+    }
+
+    public Date getAttemptDate() {
+        return attemptDate;
+    }
+
+    public void setAttemptDate(Date attemptDate) {
+        this.attemptDate = attemptDate;
+    }
 }

@@ -1,26 +1,60 @@
 package backend.models;
 
 public class Answer {
-    private String answerId;
-    private String attemptId;
-    private String questionId;
-    private String response;
-    private float score;
+
+    private int answerId;
+    private int attemptId;
+    private int questionId;
+    private String selectedOption;
+    private boolean correct;
 
     public Answer() {}
 
-    public String getAnswerId() { return answerId; }
-    public void setAnswerId(String answerId) { this.answerId = answerId; }
+    public Answer(int answerId, int attemptId, int questionId, String selectedOption, boolean correct) {
+        this.answerId = answerId;
+        this.attemptId = attemptId;
+        this.questionId = questionId;
+        this.selectedOption = selectedOption;
+        this.correct = correct;
+    }
 
-    public String getAttemptId() { return attemptId; }
-    public void setAttemptId(String attemptId) { this.attemptId = attemptId; }
+    public int getAnswerId() {
+        return answerId;
+    }
 
-    public String getQuestionId() { return questionId; }
-    public void setQuestionId(String questionId) { this.questionId = questionId; }
+    public void setAnswerId(int answerId) {
+        this.answerId = answerId;
+    }
 
-    public String getResponse() { return response; }
-    public void setResponse(String response) { this.response = response; }
+    public int getAttemptId() {
+        return attemptId;
+    }
 
-    public float getScore() { return score; }
-    public void setScore(float score) { this.score = score; }
+    public void setAttemptId(int attemptId) {
+        this.attemptId = attemptId;
+    }
+
+    public int getQuestionId() {
+        return questionId;
+    }
+
+    public void setQuestionId(int questionId) {
+        this.questionId = questionId;
+    }
+
+    public String getSelectedOption() {
+        return selectedOption;
+    }
+
+    public void setSelectedOption(String selectedOption) {
+        this.selectedOption = selectedOption;
+    }
+
+    public boolean isCorrect() {
+        return correct;
+    }
+
+    public void setCorrect(boolean correct) {
+        this.correct = correct;
+    }
 }

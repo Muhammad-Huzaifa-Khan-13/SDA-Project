@@ -1,18 +1,25 @@
 package backend.models;
 
 public class Enrollment {
-    private String enrollmentId;
-    private String studentId;
-    private String courseId;
+
+    private int enrollmentId;
+    private int studentId;
+    private int courseId;
 
     public Enrollment() {}
 
-    public String getEnrollmentId() { return enrollmentId; }
-    public void setEnrollmentId(String enrollmentId) { this.enrollmentId = enrollmentId; }
+    public Enrollment(int enrollmentId, int studentId, int courseId) {
+        this.enrollmentId = enrollmentId;
+        this.studentId = studentId;
+        this.courseId = courseId;
+    }
 
-    public String getStudentId() { return studentId; }
-    public void setStudentId(String studentId) { this.studentId = studentId; }
+    public int getEnrollmentId() { return enrollmentId; }
+    public void setEnrollmentId(int enrollmentId) { this.enrollmentId = enrollmentId; }
 
-    public String getCourseId() { return courseId; }
-    public void setCourseId(String courseId) { this.courseId = courseId; }
+    public int getStudentId() { return studentId; }
+    public void setStudentId(int studentId) { this.studentId = studentId; }
+
+    public int getCourseId() { return courseId; }
+    public void setCourseId(int courseId) { this.courseId = courseId; }
 }

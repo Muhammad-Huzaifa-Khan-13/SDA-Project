@@ -1,30 +1,55 @@
 package backend.models;
 
 public class Question {
-    private String questionId;
-    private String quizId;
-    private String text;
-    private String type;
-    private float marks;
-    private int order;
+
+    private int questionId;
+    private int quizId;
+    private String questionText;
+
+    private String optionA;
+    private String optionB;
+    private String optionC;
+    private String optionD;
+
+    private String correctOption;
 
     public Question() {}
 
-    public String getQuestionId() { return questionId; }
-    public void setQuestionId(String questionId) { this.questionId = questionId; }
+    public Question(int questionId, int quizId, String questionText,
+                    String optionA, String optionB, String optionC, String optionD,
+                    String correctOption) {
 
-    public String getQuizId() { return quizId; }
-    public void setQuizId(String quizId) { this.quizId = quizId; }
+        this.questionId = questionId;
+        this.quizId = quizId;
+        this.questionText = questionText;
+        this.optionA = optionA;
+        this.optionB = optionB;
+        this.optionC = optionC;
+        this.optionD = optionD;
+        this.correctOption = correctOption;
+    }
 
-    public String getText() { return text; }
-    public void setText(String text) { this.text = text; }
+    public int getQuestionId() { return questionId; }
+    public void setQuestionId(int questionId) { this.questionId = questionId; }
 
-    public String getType() { return type; }
-    public void setType(String type) { this.type = type; }
+    public int getQuizId() { return quizId; }
+    public void setQuizId(int quizId) { this.quizId = quizId; }
 
-    public float getMarks() { return marks; }
-    public void setMarks(float marks) { this.marks = marks; }
+    public String getQuestionText() { return questionText; }
+    public void setQuestionText(String questionText) { this.questionText = questionText; }
 
-    public int getOrder() { return order; }
-    public void setOrder(int order) { this.order = order; }
+    public String getOptionA() { return optionA; }
+    public void setOptionA(String optionA) { this.optionA = optionA; }
+
+    public String getOptionB() { return optionB; }
+    public void setOptionB(String optionB) { this.optionB = optionB; }
+
+    public String getOptionC() { return optionC; }
+    public void setOptionC(String optionC) { this.optionC = optionC; }
+
+    public String getOptionD() { return optionD; }
+    public void setOptionD(String optionD) { this.optionD = optionD; }
+
+    public String getCorrectOption() { return correctOption; }
+    public void setCorrectOption(String correctOption) { this.correctOption = correctOption; }
 }
