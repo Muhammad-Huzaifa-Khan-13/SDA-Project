@@ -34,6 +34,23 @@ public class AnswerDAO {
 
         return false;
     }
+    public boolean updateCorrectness(int answerId, boolean correct) {
+        String sql = "UPDATE answers SET is_correct = ? WHERE answer_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setBoolean(1, correct);
+            stmt.setInt(2, answerId);
+
+            return stmt.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            System.out.println("UpdateCorrectness Error: " + e.getMessage());
+        }
+        return false;
+    }
+
 
     public List<Answer> getByAttempt(int attemptId) {
         String sql = "SELECT * FROM answers WHERE attempt_id = ?";

@@ -1,14 +1,23 @@
 package backend.controllers;
 
 import backend.models.Course;
+import backend.services.CourseService;
+
+import java.util.List;
 
 public class CourseController {
 
-    public CourseController() {}
+    private CourseService courseService = new CourseService();
 
-    public void addStudentToCourse(String courseId, String studentId) {}
+    public boolean createCourse(String name, int teacherId) {
+        return courseService.createCourse(name, teacherId);
+    }
 
-    public void removeStudentFromCourse(String courseId, String studentId) {}
+    public List<Course> getCoursesByTeacher(int teacherId) {
+        return courseService.getCoursesByTeacher(teacherId);
+    }
 
-    public void createCourse(Course course) {}
+    public List<Course> getAllCourses() {
+        return courseService.getAllCourses();
+    }
 }

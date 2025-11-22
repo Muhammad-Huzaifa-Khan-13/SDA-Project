@@ -1,15 +1,23 @@
 package backend.controllers;
 
-import backend.models.Question;
 import backend.models.Quiz;
+import backend.services.QuizService;
+
+import java.util.List;
 
 public class QuizController {
 
-    public QuizController() {}
+    private QuizService quizService = new QuizService();
 
-    public void createQuiz(Quiz quiz) {}
+    public boolean createQuiz(int courseId, String title, String quizType) {
+        return quizService.createQuiz(courseId, title, quizType);
+    }
 
-    public void addQuestion(String quizId, Question question) {}
+    public Quiz getQuizById(int quizId) {
+        return quizService.getQuizById(quizId);
+    }
 
-    public void removeQuestion(String quizId, String questionId) {}
+    public List<Quiz> getQuizzesByCourse(int courseId) {
+        return quizService.getQuizzesByCourse(courseId);
+    }
 }

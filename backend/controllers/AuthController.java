@@ -1,15 +1,18 @@
 package backend.controllers;
 
-import backend.models.Session;
+import backend.enums.Role;
 import backend.models.User;
+import backend.services.AuthenticationService;
 
 public class AuthController {
 
-    public AuthController() {}
+    private AuthenticationService authService = new AuthenticationService();
 
-    public void register(User user) {}
+    public User login(String email, String password) {
+        return authService.login(email, password);
+    }
 
-    public Session authenticate(String email, String password) { return null; }
-
-    public void logout(String sessionId) {}
+    public boolean register(String name, String email, String password, Role role) {
+        return authService.register(name, email, password, role);
+    }
 }

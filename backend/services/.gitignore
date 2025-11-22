@@ -2,3 +2,7 @@
 /EvaluationService.class
 /PaymentService.class
 /ReportingService.class
+/CourseService.class
+/QuizService.class
+/QuestionService.class
+/AttemptService.class

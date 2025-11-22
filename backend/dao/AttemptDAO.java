@@ -94,6 +94,23 @@ public class AttemptDAO {
 
         return list;
     }
+    public boolean updateStatus(int attemptId, String status) {
+        String sql = "UPDATE attempts SET status = ? WHERE attempt_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setString(1, status);
+            stmt.setInt(2, attemptId);
+
+            return stmt.executeUpdate() > 0;
+
+        } catch (Exception e) {
+            System.out.println("UpdateStatus Error: " + e.getMessage());
+        }
+        return false;
+    }
+
 
     private Attempt extractAttempt(ResultSet rs) throws SQLException {
         return new Attempt(
