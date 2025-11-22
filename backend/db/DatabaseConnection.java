@@ -7,10 +7,10 @@ import java.sql.SQLException;
 public class DatabaseConnection {
 
     private static final String URL =
-        "jdbc:mysql://localhost:3306/quizdb?useSSL=false&serverTimezone=UTC&autoReconnect=true";
+    		"jdbc:mysql://trolley.proxy.rlwy.net:54135/quizdb?useSSL=false&autoReconnect=true";
 
     private static final String USER = "root";
-    private static final String PASSWORD = "sda123"; 
+    private static final String PASSWORD = "gwIdHgdnnmBsrmLxLisJXmqyeFbqZsFn"; 
 
     public static Connection getConnection() {
         try {
