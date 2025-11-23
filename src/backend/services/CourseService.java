@@ -26,4 +26,8 @@ public class CourseService {
     public Course getCourseById(int id) {
         return courseDAO.getById(id);
     }
+
+    public boolean deleteCourse(int id) {
+        return courseDAO.delete(id);
+    }
 }

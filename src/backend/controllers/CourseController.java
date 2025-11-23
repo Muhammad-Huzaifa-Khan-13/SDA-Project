@@ -24,4 +24,8 @@ public class CourseController {
     public Course getCourseById(int id) {
         return courseService.getCourseById(id);
     }
+
+    public boolean deleteCourse(int id) {
+        return courseService.deleteCourse(id);
+    }
 }
