@@ -1,9 +1,13 @@
 package frontend;
 
 import backend.controllers.ReportController;
+import backend.controllers.QuizController;
+import backend.controllers.CourseController;
 import backend.dao.UserDAO;
 import backend.models.Report;
 import backend.models.User;
+import backend.models.Quiz;
+import backend.models.Course;
 import backend.enums.Role;
 import backend.controllers.AttemptController;
 import backend.models.Attempt;
@@ -23,6 +27,8 @@ public class ResultPage extends JDialog {
     private DefaultTableModel tableModel;
     private ReportController reportController = new ReportController();
     private UserDAO userDAO = new UserDAO();
+    private QuizController quizController = new QuizController();
+    private CourseController courseController = new CourseController();
     private AttemptController attemptController = new AttemptController();
     // currently displayed student id (used when exporting selected report)
     private int displayedStudentId = 0;
@@ -62,12 +68,14 @@ public class ResultPage extends JDialog {
 
         root.add(top, BorderLayout.NORTH);
 
-        // Table
-        tableModel = new DefaultTableModel(new Object[]{"Report ID","Quiz ID","Total Q","Correct","%"}, 0) {
+        // Table: include hidden quizId column (last column) used for exports
+        tableModel = new DefaultTableModel(new Object[]{"Report ID","Quiz Title","Course","Total Q","Correct","%","_quizId"}, 0) {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         table = new JTable(tableModel);
         table.setFillsViewportHeight(true);
+        // hide the last column (quiz id) from view but keep it in the model for export/logic
+        table.removeColumn(table.getColumnModel().getColumn(table.getColumnCount()-1));
         JScrollPane sp = new JScrollPane(table);
         root.add(sp, BorderLayout.CENTER);
 
@@ -128,7 +136,22 @@ public class ResultPage extends JDialog {
             List<Report> reports = reportController.getReportsOfStudent(studentId);
             if (reports != null) {
                 for (Report r : reports) {
-                    tableModel.addRow(new Object[]{r.getReportId(), r.getQuizId(), r.getTotalQuestions(), r.getCorrectAnswers(), r.getPercentage()});
+                    int qid = r.getQuizId();
+                    // Skip reports that reference quizzes that no longer exist
+                    Quiz q = null;
+                    try { q = quizController.getQuizById(qid); } catch (Exception ignore) { q = null; }
+                    if (q == null) {
+                        // quiz deleted or missing; skip showing this report
+                        continue;
+                    }
+
+                    String title = q.getTitle() != null ? q.getTitle() : "(no title)";
+                    String courseName = "(unknown course)";
+                    try {
+                        Course c = courseController.getCourseById(q.getCourseId());
+                        if (c != null && c.getCourseName() != null) courseName = c.getCourseName();
+                    } catch (Exception ignore) {}
+                    tableModel.addRow(new Object[]{r.getReportId(), title, courseName, r.getTotalQuestions(), r.getCorrectAnswers(), r.getPercentage(), qid});
                 }
             }
         } catch (Exception ex) {
@@ -145,9 +168,18 @@ public class ResultPage extends JDialog {
         }
 
         int reportId = (int) tableModel.getValueAt(row, 0);
-        int quizId = (int) tableModel.getValueAt(row, 1);
+        int quizId = (int) tableModel.getValueAt(row, 6); // hidden column
         // We know which student is currently displayed
         int studentId = displayedStudentId;
+
+        // ensure the quiz still exists
+        Quiz q = quizController.getQuizById(quizId);
+        if (q == null) {
+            JOptionPane.showMessageDialog(this, "Selected quiz has been deleted; report is not available.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            // refresh table to remove any stale entries
+            refreshTable();
+            return;
+        }
 
         Report r = reportController.getReport(studentId, quizId);
         if (r == null) {
@@ -170,7 +202,7 @@ public class ResultPage extends JDialog {
 
         int row = table.getSelectedRow();
         Integer quizId = null;
-        if (row >= 0) quizId = (int) tableModel.getValueAt(row, 1);
+        if (row >= 0) quizId = (int) tableModel.getValueAt(row, 6); // hidden column
 
         if (quizId == null) {
             String s = JOptionPane.showInputDialog(this, "Enter Quiz ID to export:", "Quiz ID", JOptionPane.PLAIN_MESSAGE);
@@ -178,9 +210,15 @@ public class ResultPage extends JDialog {
             try { quizId = Integer.parseInt(s.trim()); } catch (Exception ex) { JOptionPane.showMessageDialog(this, "Invalid quiz id.", "Validation", JOptionPane.WARNING_MESSAGE); return; }
         }
 
+        // ensure quiz exists
+        Quiz q = quizController.getQuizById(quizId);
+        if (q == null) {
+            JOptionPane.showMessageDialog(this, "Quiz has been deleted or does not exist.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            return;
+        }
         List<Report> reports = getReportsForQuiz(quizId);
         if (reports == null || reports.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "No reports found for quiz id " + quizId, "Info", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "No reports found for quiz " + (q.getTitle() != null ? q.getTitle() : quizId), "Info", JOptionPane.INFORMATION_MESSAGE);
             return;
         }
 
@@ -217,18 +255,38 @@ public class ResultPage extends JDialog {
         File file = fc.getSelectedFile();
 
         try (FileWriter fw = new FileWriter(file)) {
+            int skipped = 0;
             if (choice == 0) {
-                // CSV header
-                fw.write("report_id,student_id,quiz_id,total_questions,correct_answers,percentage\n");
+                // CSV header with quiz title and course
+                fw.write("report_id,student_id,quiz_title,course,total_questions,correct_answers,percentage\n");
                 for (Report r : reports) {
-                    fw.write(String.format("%d,%d,%d,%d,%d,%.2f\n", r.getReportId(), r.getStudentId(), r.getQuizId(), r.getTotalQuestions(), r.getCorrectAnswers(), r.getPercentage()));
+                    int qid = r.getQuizId();
+                    Quiz qq = quizController.getQuizById(qid);
+                    if (qq == null) { skipped++; continue; }
+                    String qt = qq.getTitle() != null ? qq.getTitle() : "(no title)";
+                    String cn = "(unknown)";
+                    try {
+                        Course c = courseController.getCourseById(qq.getCourseId());
+                        if (c != null && c.getCourseName() != null) cn = c.getCourseName();
+                    } catch (Exception ignore) {}
+                    fw.write(String.format("%d,%d,\"%s\",\"%s\",%d,%d,%.2f\n", r.getReportId(), r.getStudentId(), qt.replace("\"","\"\""), cn.replace("\"","\"\""), r.getTotalQuestions(), r.getCorrectAnswers(), r.getPercentage()));
                 }
             } else {
-                // TXT human readable
+                // TXT human readable with quiz title and course
                 for (Report r : reports) {
+                    int qid = r.getQuizId();
+                    Quiz qq = quizController.getQuizById(qid);
+                    if (qq == null) { skipped++; continue; }
+                    String qt = qq.getTitle() != null ? qq.getTitle() : "(no title)";
+                    String cn = "(unknown)";
+                    try {
+                        Course c = courseController.getCourseById(qq.getCourseId());
+                        if (c != null && c.getCourseName() != null) cn = c.getCourseName();
+                    } catch (Exception ignore) {}
                     fw.write("Report ID: " + r.getReportId() + "\n");
                     fw.write("Student ID: " + r.getStudentId() + "\n");
-                    fw.write("Quiz ID: " + r.getQuizId() + "\n");
+                    fw.write("Quiz: " + qt + "\n");
+                    fw.write("Course: " + cn + "\n");
                     fw.write("Total Questions: " + r.getTotalQuestions() + "\n");
                     fw.write("Correct Answers: " + r.getCorrectAnswers() + "\n");
                     fw.write(String.format("Percentage: %.2f%%\n", r.getPercentage()));
@@ -236,7 +294,8 @@ public class ResultPage extends JDialog {
                 }
             }
             fw.flush();
-            JOptionPane.showMessageDialog(this, "Exported to " + file.getAbsolutePath(), "Success", JOptionPane.INFORMATION_MESSAGE);
+            if (skipped > 0) JOptionPane.showMessageDialog(this, "Exported to " + file.getAbsolutePath() + " (" + skipped + " reports skipped because their quizzes were deleted)", "Partial Export", JOptionPane.WARNING_MESSAGE);
+            else JOptionPane.showMessageDialog(this, "Exported to " + file.getAbsolutePath(), "Success", JOptionPane.INFORMATION_MESSAGE);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Failed to export: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }

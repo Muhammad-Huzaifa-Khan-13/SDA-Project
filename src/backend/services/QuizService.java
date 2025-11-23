@@ -44,6 +44,11 @@ public class QuizService {
         attemptDAO.deleteByQuiz(quizId);
         // delete associated questions first to keep DB consistent
         questionDAO.deleteByQuiz(quizId);
+        // delete reports for this quiz to avoid stale entries appearing in results
+        try {
+            backend.dao.ReportDAO reportDAO = new backend.dao.ReportDAO();
+            reportDAO.deleteByQuiz(quizId);
+        } catch (Exception ignore) {}
         return quizDAO.delete(quizId);
     }
 }

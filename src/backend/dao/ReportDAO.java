@@ -76,6 +76,19 @@ public class ReportDAO {
         return list;
     }
 
+    public boolean deleteByQuiz(int quizId) {
+        String sql = "DELETE FROM reports WHERE quiz_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, quizId);
+            stmt.executeUpdate();
+            return true;
+        } catch (Exception e) {
+            System.out.println("Delete Reports By Quiz Error: " + e.getMessage());
+        }
+        return false;
+    }
+
     private Report extract(ResultSet rs) throws SQLException {
         return new Report(
                 rs.getInt("report_id"),
