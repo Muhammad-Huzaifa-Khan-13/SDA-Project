@@ -50,7 +50,7 @@ public class TeacherDashboard extends JFrame {
 
         JButton manageQuestionsBtn = new JButton("Manage Questions");
         manageQuestionsBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Manage Questions - feature coming soon.", "Questions", JOptionPane.INFORMATION_MESSAGE);
+            SwingUtilities.invokeLater(() -> new ManageQuestionsPage(this).setVisible(true));
         });
 
         JButton viewResultsBtn = new JButton("View Results");
