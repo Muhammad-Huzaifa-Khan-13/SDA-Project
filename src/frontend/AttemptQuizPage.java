@@ -140,9 +140,24 @@ public class AttemptQuizPage extends JDialog {
         try {
             java.util.List<Course> courses = courseController.getAllCourses();
             DefaultComboBoxModel<Course> model = new DefaultComboBoxModel<>();
+
+            // Deduplicate by course name (case-insensitive trim) to avoid duplicate entries like multiple "OOP"
+            java.util.Map<String, Course> unique = new java.util.LinkedHashMap<>();
             if (courses != null) {
+                for (Course c : courses) {
+                    String name = c.getCourseName() != null ? c.getCourseName().trim().toLowerCase() : null;
+                    if (name == null || name.isEmpty()) continue;
+                    if (!unique.containsKey(name)) unique.put(name, c);
+                }
+            }
+
+            for (Course c : unique.values()) model.addElement(c);
+
+            // Fallback: if dedup produced no items (unlikely), fall back to original list
+            if (model.getSize() == 0 && courses != null) {
                 for (Course c : courses) model.addElement(c);
             }
+
             courseCombo.setModel(model);
             if (model.getSize() > 0) {
                 courseCombo.setSelectedIndex(0);
