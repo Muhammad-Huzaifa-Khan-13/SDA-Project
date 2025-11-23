@@ -12,7 +12,7 @@ public class AdminDashboard extends JFrame {
     public AdminDashboard(User user) {
         this.user = user;
         setTitle("Admin Dashboard - Quiz Management System");
-        setSize(800, 520);
+        setSize(1200, 700);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -20,9 +20,9 @@ public class AdminDashboard extends JFrame {
     }
 
     private void initUI() {
-        JPanel root = new JPanel(new BorderLayout(12,12));
+        JPanel root = new JPanel(new BorderLayout(16,16));
         root.setBackground(UIUtils.BACKGROUND);
-        root.setBorder(BorderFactory.createEmptyBorder(12,12,12,12));
+        root.setBorder(BorderFactory.createEmptyBorder(18,18,18,18));
 
         // Top header
         JPanel header = new JPanel(new BorderLayout());
