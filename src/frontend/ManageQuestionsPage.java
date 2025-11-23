@@ -81,8 +81,8 @@ public class ManageQuestionsPage extends JDialog {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof Question) {
                     Question q = (Question) value;
-                    // Show question text without numeric prefix; include internal id in brackets for reference
-                    setText("[" + q.getQuestionId() + "] " + q.getQuestionText());
+                    // Show only the question text (no numeric id prefix)
+                    setText(q.getQuestionText());
                 }
                 return this;
             }

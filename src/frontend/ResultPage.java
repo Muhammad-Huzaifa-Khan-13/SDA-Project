@@ -68,8 +68,8 @@ public class ResultPage extends JDialog {
 
         root.add(top, BorderLayout.NORTH);
 
-        // Table: include hidden quizId column (last column) used for exports
-        tableModel = new DefaultTableModel(new Object[]{"Report ID","Quiz Title","Course","Total Q","Correct","%","_quizId"}, 0) {
+        // Table: do not show report IDs; include a hidden quizId column (last column) used for exports
+        tableModel = new DefaultTableModel(new Object[]{"Quiz Title","Course","Total Q","Correct","%","_quizId"}, 0) {
             public boolean isCellEditable(int row, int col) { return false; }
         };
         table = new JTable(tableModel);
@@ -140,10 +140,7 @@ public class ResultPage extends JDialog {
                     // Skip reports that reference quizzes that no longer exist
                     Quiz q = null;
                     try { q = quizController.getQuizById(qid); } catch (Exception ignore) { q = null; }
-                    if (q == null) {
-                        // quiz deleted or missing; skip showing this report
-                        continue;
-                    }
+                    if (q == null) continue;
 
                     String title = q.getTitle() != null ? q.getTitle() : "(no title)";
                     String courseName = "(unknown course)";
@@ -151,7 +148,7 @@ public class ResultPage extends JDialog {
                         Course c = courseController.getCourseById(q.getCourseId());
                         if (c != null && c.getCourseName() != null) courseName = c.getCourseName();
                     } catch (Exception ignore) {}
-                    tableModel.addRow(new Object[]{r.getReportId(), title, courseName, r.getTotalQuestions(), r.getCorrectAnswers(), r.getPercentage(), qid});
+                    tableModel.addRow(new Object[]{title, courseName, r.getTotalQuestions(), r.getCorrectAnswers(), r.getPercentage(), qid});
                 }
             }
         } catch (Exception ex) {
@@ -167,8 +164,8 @@ public class ResultPage extends JDialog {
             return;
         }
 
-        int reportId = (int) tableModel.getValueAt(row, 0);
-        int quizId = (int) tableModel.getValueAt(row, 6); // hidden column
+        // hidden quizId is stored in the model's last column
+        int quizId = (int) tableModel.getValueAt(row, tableModel.getColumnCount()-1);
         // We know which student is currently displayed
         int studentId = displayedStudentId;
 
