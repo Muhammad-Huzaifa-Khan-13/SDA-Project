@@ -20,4 +20,8 @@ public class CourseController {
     public List<Course> getAllCourses() {
         return courseService.getAllCourses();
     }
+
+    public Course getCourseById(int id) {
+        return courseService.getCourseById(id);
+    }
 }

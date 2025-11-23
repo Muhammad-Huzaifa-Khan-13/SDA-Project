@@ -111,6 +111,20 @@ public class AttemptDAO {
         return false;
     }
 
+    // Delete all attempts for a given quiz
+    public boolean deleteByQuiz(int quizId) {
+        String sql = "DELETE FROM attempts WHERE quiz_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, quizId);
+            stmt.executeUpdate();
+            return true;
+        } catch (Exception e) {
+            System.out.println("DeleteAttemptsByQuiz Error: " + e.getMessage());
+        }
+        return false;
+    }
+
 
     private Attempt extractAttempt(ResultSet rs) throws SQLException {
         return new Attempt(

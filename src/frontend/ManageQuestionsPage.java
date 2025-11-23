@@ -38,6 +38,27 @@ public class ManageQuestionsPage extends JDialog {
         top.add(new JLabel("Select Quiz:"));
         quizCombo = new JComboBox<>();
         quizCombo.setPreferredSize(new Dimension(420, 28));
+        // Render combo entries as quiz title (course)
+        quizCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof Quiz) {
+                    Quiz q = (Quiz) value;
+                    String title = q.getTitle() != null ? q.getTitle() : "(no title)";
+                    String courseName = "(unknown course)";
+                    try {
+                        backend.controllers.CourseController cc = new backend.controllers.CourseController();
+                        backend.models.Course course = cc.getCourseById(q.getCourseId());
+                        if (course != null && course.getCourseName() != null) courseName = course.getCourseName();
+                    } catch (Exception ignore) {}
+                    setText(title + " (" + courseName + ")");
+                } else {
+                    setText(value != null ? value.toString() : "");
+                }
+                return this;
+            }
+        });
         top.add(quizCombo);
         JButton loadBtn = new JButton("Load Questions");
         loadBtn.addActionListener(e -> loadQuestionsForSelectedQuiz());
@@ -53,6 +74,7 @@ public class ManageQuestionsPage extends JDialog {
                 super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof Question) {
                     Question q = (Question) value;
+                    // Show question text without numeric prefix; include internal id in brackets for reference
                     setText("[" + q.getQuestionId() + "] " + q.getQuestionText());
                 }
                 return this;

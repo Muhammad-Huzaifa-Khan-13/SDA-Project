@@ -36,7 +36,7 @@ public class TeacherDashboard extends JFrame {
         createQuizBtn.addActionListener(e -> {
             // open create quiz dialog
             SwingUtilities.invokeLater(() -> {
-                new CreateQuizPage(this).setVisible(true);
+                new ManageQuizPage(this).setVisible(true);
             });
         });
 
@@ -55,7 +55,7 @@ public class TeacherDashboard extends JFrame {
 
         JButton viewResultsBtn = new JButton("View Results");
         viewResultsBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "View Results - feature coming soon.", "Results", JOptionPane.INFORMATION_MESSAGE);
+            SwingUtilities.invokeLater(() -> new ViewResultsPage(this).setVisible(true));
         });
 
         JButton changePwdBtn = new JButton("Change Password");

@@ -72,6 +72,20 @@ public class GradeDAO {
         return list;
     }
 
+    // Delete grades for attempts belonging to a quiz
+    public boolean deleteByQuiz(int quizId) {
+        String sql = "DELETE FROM grades WHERE attempt_id IN (SELECT attempt_id FROM attempts WHERE quiz_id = ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, quizId);
+            stmt.executeUpdate();
+            return true;
+        } catch (Exception e) {
+            System.out.println("DeleteGradesByQuiz Error: " + e.getMessage());
+        }
+        return false;
+    }
+
     private Grade extractGrade(ResultSet rs) throws SQLException {
         return new Grade(
             rs.getInt("grade_id"),
