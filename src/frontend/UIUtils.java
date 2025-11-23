@@ -7,10 +7,11 @@ import java.util.regex.Pattern;
 
 public class UIUtils {
 
+    // Use Eternex primary purple across the project
     public static final Color BACKGROUND = new Color(245, 247, 250);
-    public static final Color PRIMARY = new Color(30, 115, 190);
-    public static final Color ACCENT = new Color(120, 220, 140);
-    public static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 18);
+    public static final Color PRIMARY = new Color(0x99, 0x00, 0x66); // previously blue
+    public static final Color ACCENT = new Color(0xCC, 0x66, 0x99);
+    public static final Font TITLE_FONT = new Font("Segoe UI", Font.BOLD, 20);
     public static final Font REGULAR_FONT = new Font("Segoe UI", Font.PLAIN, 14);
     public static final Font BOLD_FONT = new Font("Segoe UI", Font.BOLD, 14);
 

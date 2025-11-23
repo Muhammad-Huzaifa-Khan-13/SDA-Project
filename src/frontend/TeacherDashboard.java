@@ -15,7 +15,7 @@ public class TeacherDashboard extends JFrame {
     public TeacherDashboard(User user) {
         this.user = user;
         setTitle("Teacher Dashboard - Quiz Management System");
-        setSize(600, 400);
+        setSize(1200, 700);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 
@@ -23,40 +23,34 @@ public class TeacherDashboard extends JFrame {
     }
 
     private void initUI() {
-        JPanel panel = new JPanel(new BorderLayout(10,10));
-        panel.setBorder(BorderFactory.createEmptyBorder(10,10,10,10));
+        JPanel panel = new JPanel(new BorderLayout(16,16));
+        panel.setBorder(BorderFactory.createEmptyBorder(18,18,18,18));
+        panel.setBackground(UIUtils.BACKGROUND);
 
         JLabel welcome = new JLabel("Welcome, " + user.getName() + " (Teacher)");
-        welcome.setFont(new Font("Arial", Font.BOLD, 16));
+        welcome.setFont(UIUtils.TITLE_FONT);
+        welcome.setForeground(UIUtils.PRIMARY);
         panel.add(welcome, BorderLayout.NORTH);
 
-        JPanel center = new JPanel(new GridLayout(0,1,5,5));
+        JPanel center = new JPanel(new GridLayout(0,1,12,12));
+        center.setOpaque(false);
+        center.setBorder(BorderFactory.createEmptyBorder(20, 200, 20, 200));
 
         JButton createQuizBtn = new JButton("Create Quiz");
-        createQuizBtn.addActionListener(e -> {
-            // open create quiz dialog
-            SwingUtilities.invokeLater(() -> {
-                new CreateQuizPage(this).setVisible(true);
-            });
-        });
+        UIUtils.applyPrimaryButton(createQuizBtn);
+        createQuizBtn.addActionListener(e -> SwingUtilities.invokeLater(() -> new CreateQuizPage(this).setVisible(true)));
 
         JButton assignQuizBtn = new JButton("Assign Quiz");
-        assignQuizBtn.addActionListener(e -> {
-            // open assign quiz dialog
-            SwingUtilities.invokeLater(() -> {
-                new AssignQuizPage(this).setVisible(true);
-            });
-        });
+        UIUtils.applyPrimaryButton(assignQuizBtn);
+        assignQuizBtn.addActionListener(e -> SwingUtilities.invokeLater(() -> new AssignQuizPage(this).setVisible(true)));
 
         JButton manageQuestionsBtn = new JButton("Manage Questions");
-        manageQuestionsBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "Manage Questions - feature coming soon.", "Questions", JOptionPane.INFORMATION_MESSAGE);
-        });
+        UIUtils.applySecondaryButton(manageQuestionsBtn);
+        manageQuestionsBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "Manage Questions - feature coming soon.", "Questions", JOptionPane.INFORMATION_MESSAGE));
 
         JButton viewResultsBtn = new JButton("View Results");
-        viewResultsBtn.addActionListener(e -> {
-            JOptionPane.showMessageDialog(this, "View Results - feature coming soon.", "Results", JOptionPane.INFORMATION_MESSAGE);
-        });
+        UIUtils.applySecondaryButton(viewResultsBtn);
+        viewResultsBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "View Results - feature coming soon.", "Results", JOptionPane.INFORMATION_MESSAGE));
 
         JButton changePwdBtn = new JButton("Change Password");
         UIUtils.applySecondaryButton(changePwdBtn);
@@ -71,7 +65,9 @@ public class TeacherDashboard extends JFrame {
         panel.add(center, BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        bottom.setOpaque(false);
         JButton logoutBtn = new JButton("Logout");
+        UIUtils.applySecondaryButton(logoutBtn);
         logoutBtn.addActionListener(e -> {
             dispose();
             SwingUtilities.invokeLater(() -> new LoginPage().setVisible(true));
