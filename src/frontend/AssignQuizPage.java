@@ -130,24 +130,33 @@ public class AssignQuizPage extends JDialog {
 
     private void assignQuiz() {
         Quiz selectedQuiz = (Quiz) quizCombo.getSelectedItem();
+        Course selectedCourse = (Course) courseCombo.getSelectedItem();
         String studentIds = studentIdsField.getText().trim();
         if (selectedQuiz == null) {
             JOptionPane.showMessageDialog(this, "Please select a quiz", "Validation", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        if (studentIds.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Please enter at least one student id", "Validation", JOptionPane.WARNING_MESSAGE);
+        if (selectedCourse == null) {
+            JOptionPane.showMessageDialog(this, "Please select a course", "Validation", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
         // create assignment object; quizId and studentId are strings in model
         QuizAssignment assignment = new QuizAssignment();
         assignment.setQuizId(String.valueOf(selectedQuiz.getQuizId()));
-        assignment.setStudentId(studentIds);
+        assignment.setCourseId(selectedCourse.getCourseId());
 
         try {
+            if (studentIds.isEmpty()) {
+                int confirm = JOptionPane.showConfirmDialog(this, "No student IDs provided. Assign to ALL students enrolled in this course?", "Confirm", JOptionPane.YES_NO_OPTION);
+                if (confirm != JOptionPane.YES_OPTION) return;
+                assignment.setStudentId("ALL");
+            } else {
+                assignment.setStudentId(studentIds);
+            }
+
             assignmentController.assignQuiz(assignment);
-            JOptionPane.showMessageDialog(this, "Quiz assigned (operation sent to backend).", "Success", JOptionPane.INFORMATION_MESSAGE);
+            JOptionPane.showMessageDialog(this, "Quiz assigned.", "Success", JOptionPane.INFORMATION_MESSAGE);
             dispose();
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Assignment failed: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);

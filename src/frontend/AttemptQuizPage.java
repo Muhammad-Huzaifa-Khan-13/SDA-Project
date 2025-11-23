@@ -5,6 +5,7 @@ import backend.controllers.CourseController;
 import backend.controllers.QuestionController;
 import backend.controllers.QuizController;
 import backend.controllers.ReportController;
+import backend.controllers.AssignmentController;
 import backend.models.Attempt;
 import backend.models.Course;
 import backend.models.Question;
@@ -15,6 +16,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.ArrayList;
 import java.util.List;
+
+import backend.enums.Role;
 
 public class AttemptQuizPage extends JDialog {
 
@@ -31,6 +34,7 @@ public class AttemptQuizPage extends JDialog {
     private AttemptController attemptController = new AttemptController();
     private QuestionController questionController = new QuestionController();
     private ReportController reportController = new ReportController();
+    private AssignmentController assignmentController = new AssignmentController();
 
     private List<Question> questions = new ArrayList<>();
     private List<String> answers; // store selected option per question (A/B/C/D)
@@ -152,10 +156,24 @@ public class AttemptQuizPage extends JDialog {
     private void loadQuizzesForCourse(int courseId) {
         try {
             DefaultComboBoxModel<Quiz> model = new DefaultComboBoxModel<>();
-            java.util.List<Quiz> quizzes = quizController.getQuizzesByCourse(courseId);
-            if (quizzes != null) {
-                for (Quiz q : quizzes) model.addElement(q);
+
+            // If current user is a student, show only quizzes assigned to them for this course
+            if (Session.getInstance().getCurrentUser() != null && Session.getInstance().getCurrentUser().getRole() == Role.STUDENT) {
+                int studentId = Session.getInstance().getCurrentUser().getUserId();
+                java.util.List<Quiz> assigned = assignmentController.getAssignedQuizzesForStudentAndCourse(studentId, courseId);
+                if (assigned != null && !assigned.isEmpty()) {
+                    for (Quiz q : assigned) model.addElement(q);
+                } else {
+                    // no assigned quizzes: show none (or fallback to all quizzes if desired)
+                    // leaving list empty informs student there are no assigned quizzes for this course
+                }
+            } else {
+                java.util.List<Quiz> quizzes = quizController.getQuizzesByCourse(courseId);
+                if (quizzes != null) {
+                    for (Quiz q : quizzes) model.addElement(q);
+                }
             }
+
             quizCombo.setModel(model);
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Failed to load quizzes: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);

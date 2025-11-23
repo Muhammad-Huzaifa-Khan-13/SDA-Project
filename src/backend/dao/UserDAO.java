@@ -3,6 +3,7 @@ package backend.dao;
 import backend.db.DatabaseConnection;
 import backend.enums.Role;
 import backend.models.User;
+import backend.utils.PasswordUtils;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -18,7 +19,11 @@ public class UserDAO {
 
             stmt.setString(1, user.getName());
             stmt.setString(2, user.getEmail());
-            stmt.setString(3, user.getPassword());
+            // ensure password is hashed before storing
+            String pwd = user.getPassword();
+            if (pwd == null) pwd = "";
+            if (!PasswordUtils.isHashed(pwd)) pwd = PasswordUtils.hashPassword(pwd);
+            stmt.setString(3, pwd);
             stmt.setString(4, user.getRole().name());
 
             int affected = stmt.executeUpdate();
@@ -101,7 +106,11 @@ public class UserDAO {
 
             stmt.setString(1, user.getName());
             stmt.setString(2, user.getEmail());
-            stmt.setString(3, user.getPassword());
+            // ensure password is hashed
+            String pwd = user.getPassword();
+            if (pwd == null) pwd = "";
+            if (!PasswordUtils.isHashed(pwd)) pwd = PasswordUtils.hashPassword(pwd);
+            stmt.setString(3, pwd);
             stmt.setString(4, user.getRole().name());
             stmt.setInt(5, user.getUserId());
 
@@ -109,6 +118,23 @@ public class UserDAO {
 
         } catch (Exception e) {
             System.out.println("Update Error: " + e.getMessage());
+        }
+        return false;
+    }
+
+    public boolean changePassword(int userId, String newPassword) {
+        String sql = "UPDATE users SET password = ? WHERE user_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            String hashed = newPassword;
+            if (!PasswordUtils.isHashed(hashed)) hashed = PasswordUtils.hashPassword(newPassword);
+            stmt.setString(1, hashed);
+            stmt.setInt(2, userId);
+
+            return stmt.executeUpdate() > 0;
+        } catch (Exception e) {
+            System.out.println("ChangePassword Error: " + e.getMessage());
         }
         return false;
     }

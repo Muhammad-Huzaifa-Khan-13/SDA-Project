@@ -3,6 +3,7 @@ package backend.services;
 import backend.dao.UserDAO;
 import backend.enums.Role;
 import backend.models.User;
+import backend.utils.PasswordUtils;
 
 public class AuthenticationService {
 
@@ -17,12 +18,25 @@ public class AuthenticationService {
             return null;
         }
 
-        if (!user.getPassword().equals(password)) {
-            System.out.println("Incorrect password.");
-            return null;
+        String stored = user.getPassword();
+        // if stored is hashed, verify using PBKDF2
+        if (PasswordUtils.isHashed(stored)) {
+            if (!PasswordUtils.verifyPassword(password, stored)) {
+                System.out.println("Incorrect password.");
+                return null;
+            }
+            return user;
         }
 
-        return user; // success
+        // fallback: legacy plain-text password in DB
+        if (stored.equals(password)) {
+            // migrate to hashed password
+            userDAO.changePassword(user.getUserId(), password);
+            return user;
+        }
+
+        System.out.println("Incorrect password.");
+        return null;
     }
 
     public boolean register(String name, String email, String password, Role role) {

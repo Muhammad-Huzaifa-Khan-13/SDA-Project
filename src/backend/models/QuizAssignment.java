@@ -7,6 +7,7 @@ public class QuizAssignment {
     private String quizId;
     private String studentId;
     private Date dueAt;
+    private int courseId; // added to link assignment to course
 
     public QuizAssignment() {}
 
@@ -21,4 +22,7 @@ public class QuizAssignment {
 
     public Date getDueAt() { return dueAt; }
     public void setDueAt(Date dueAt) { this.dueAt = dueAt; }
+
+    public int getCourseId() { return courseId; }
+    public void setCourseId(int courseId) { this.courseId = courseId; }
 }

@@ -3,6 +3,7 @@ package frontend;
 import javax.swing.*;
 import java.awt.*;
 import backend.models.User;
+import backend.controllers.UserController;
 
 public class AdminDashboard extends JFrame {
 
@@ -48,9 +49,9 @@ public class AdminDashboard extends JFrame {
         JButton manageUsersBtn = new JButton("Manage Users");
         UIUtils.applyPrimaryButton(manageUsersBtn);
         manageUsersBtn.addActionListener(e -> {
-            // open registration dialog to create new users (admin)
+            // open ManageUsersPage (admin) to manage and remove users
             SwingUtilities.invokeLater(() -> {
-                RegisterPage dlg = new RegisterPage(this);
+                ManageUsersPage dlg = new ManageUsersPage(this);
                 dlg.setVisible(true);
             });
         });
@@ -99,4 +100,36 @@ public class AdminDashboard extends JFrame {
 
         add(root);
     }
+
+    // Allow admin to change password for any user
+    public void changePasswordForUser(int userId) {
+        User current = Session.getInstance().getCurrentUser();
+        if (current == null || current.getRole() != backend.enums.Role.ADMIN) {
+            JOptionPane.showMessageDialog(this, "Only admin can change other users' passwords.", "Permission", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        JPasswordField pf1 = new JPasswordField();
+        int ok = JOptionPane.showConfirmDialog(this, pf1, "Enter new password for user (ID: " + userId + "):", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (ok != JOptionPane.OK_OPTION) return;
+        String p1 = new String(pf1.getPassword());
+        if (p1.length() < 6) {
+            JOptionPane.showMessageDialog(this, "Password must be at least 6 characters.", "Validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        JPasswordField pf2 = new JPasswordField();
+        int ok2 = JOptionPane.showConfirmDialog(this, pf2, "Confirm new password:", JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+        if (ok2 != JOptionPane.OK_OPTION) return;
+        String p2 = new String(pf2.getPassword());
+        if (!p1.equals(p2)) {
+            JOptionPane.showMessageDialog(this, "Passwords do not match.", "Validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
+        UserController uc = new UserController();
+        boolean res = uc.changePassword(userId, p1, current);
+        if (res) JOptionPane.showMessageDialog(this, "Password changed successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        else JOptionPane.showMessageDialog(this, "Failed to change password.", "Error", JOptionPane.ERROR_MESSAGE);
+    }
+
 }
