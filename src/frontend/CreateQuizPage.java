@@ -96,7 +96,8 @@ public class CreateQuizPage extends JDialog {
         addQuestionsBtn.setEnabled(false);
         addQuestionsBtn.addActionListener(e -> {
             if (createdQuiz != null) {
-                new AddQuestionPage(this, createdQuiz.getQuizId()).setVisible(true);
+                // pass autoCreated = false when user explicitly clicks Add Questions
+                new AddQuestionPage(this, createdQuiz.getQuizId(), false).setVisible(true);
             }
         });
 
@@ -249,11 +250,35 @@ public class CreateQuizPage extends JDialog {
 
         if (createdQuiz != null) {
             addQuestionsBtn.setEnabled(true);
-            // show add question dialog immediately for convenience
-            new AddQuestionPage(this, createdQuiz.getQuizId()).setVisible(true);
+            // show add question dialog immediately for convenience; since we just created the quiz, mark autoCreated = true
+            new AddQuestionPage(this, createdQuiz.getQuizId(), true).setVisible(true);
+
+            // after the modal dialog closes, verify the quiz still exists (it may have been canceled by the add-question dialog)
+            Quiz persisted = quizController.getQuizById(createdQuiz.getQuizId());
+            if (persisted != null) {
+                createdQuiz = persisted;
+                JOptionPane.showMessageDialog(this, "Quiz created successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                // quiz was removed (user returned without adding questions). reset state; quizCanceled already displayed info.
+                createdQuiz = null;
+                addQuestionsBtn.setEnabled(false);
+            }
         } else {
             addQuestionsBtn.setEnabled(false);
         }
-        JOptionPane.showMessageDialog(this, "Quiz created successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
+    }
+
+    // Called by AddQuestionPage when the user returned without adding questions and the quiz was auto-created
+    public void quizCanceled(int quizId) {
+        if (createdQuiz != null && createdQuiz.getQuizId() == quizId) {
+            boolean deleted = quizController.deleteQuiz(quizId);
+            if (deleted) {
+                createdQuiz = null;
+                addQuestionsBtn.setEnabled(false);
+                JOptionPane.showMessageDialog(this, "Quiz was canceled and removed.", "Info", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "Failed to delete canceled quiz.", "Error", JOptionPane.ERROR_MESSAGE);
+            }
+        }
     }
 }

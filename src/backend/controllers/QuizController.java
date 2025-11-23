@@ -20,4 +20,9 @@ public class QuizController {
     public List<Quiz> getQuizzesByCourse(int courseId) {
         return quizService.getQuizzesByCourse(courseId);
     }
+
+    // Added delete method so UI can remove a quiz if required
+    public boolean deleteQuiz(int quizId) {
+        return quizService.deleteQuiz(quizId);
+    }
 }

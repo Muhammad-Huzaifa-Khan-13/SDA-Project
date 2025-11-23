@@ -7,6 +7,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 public class AddQuestionPage extends JDialog {
 
@@ -18,9 +20,26 @@ public class AddQuestionPage extends JDialog {
 
     private QuestionController questionController = new QuestionController();
 
+    // track whether this dialog was opened right after quiz creation
+    private boolean autoCreated = false;
+    // track whether at least one question has been added in this dialog
+    private boolean questionAdded = false;
+
     public AddQuestionPage(Dialog parent, int quizId) {
         super(parent, "Add Question", true);
         this.quizId = quizId;
+        setSize(640, 420);
+        setLocationRelativeTo(parent);
+        setResizable(false);
+
+        initUI();
+    }
+
+    // New constructor to accept autoCreated flag
+    public AddQuestionPage(Dialog parent, int quizId, boolean autoCreated) {
+        super(parent, "Add Question", true);
+        this.quizId = quizId;
+        this.autoCreated = autoCreated;
         setSize(640, 420);
         setLocationRelativeTo(parent);
         setResizable(false);
@@ -116,6 +135,15 @@ public class AddQuestionPage extends JDialog {
         root.add(card, c);
 
         add(root);
+
+        // Ensure closing the window behaves like pressing Return
+        setDefaultCloseOperation(JDialog.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                handleReturn();
+            }
+        });
     }
 
     private boolean addQuestion() {
@@ -142,6 +170,7 @@ public class AddQuestionPage extends JDialog {
         // clear fields
         questionArea.setText(""); optA.setText(""); optB.setText(""); optC.setText(""); optD.setText("");
         correctCombo.setSelectedIndex(0);
+        questionAdded = true;
         return true;
     }
 
@@ -160,10 +189,24 @@ public class AddQuestionPage extends JDialog {
         if (!optC.getText().trim().isEmpty()) hasData = true;
         if (!optD.getText().trim().isEmpty()) hasData = true;
 
+        boolean doDispose = false;
         if (hasData) {
             int res = JOptionPane.showConfirmDialog(this, "Discard changes and return?", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
-            if (res == JOptionPane.YES_OPTION) dispose();
+            if (res == JOptionPane.YES_OPTION) doDispose = true;
         } else {
+            doDispose = true;
+        }
+
+        if (doDispose) {
+            // If this dialog was opened immediately after quiz creation and the user added no questions,
+            // we should remove the created quiz so CreateQuizPage can return to previous state.
+            if (autoCreated && !questionAdded) {
+                // parent is expected to be CreateQuizPage (a JDialog). Attempt to notify it.
+                Dialog parent = (Dialog) getOwner();
+                if (parent instanceof CreateQuizPage) {
+                    ((CreateQuizPage) parent).quizCanceled(quizId);
+                }
+            }
             dispose();
         }
     }
