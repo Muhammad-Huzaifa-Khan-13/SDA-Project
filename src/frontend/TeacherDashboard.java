@@ -48,6 +48,10 @@ public class TeacherDashboard extends JFrame {
         UIUtils.applySecondaryButton(manageQuestionsBtn);
         manageQuestionsBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "Manage Questions - feature coming soon.", "Questions", JOptionPane.INFORMATION_MESSAGE));
 
+        manageQuestionsBtn.addActionListener(e -> {
+            SwingUtilities.invokeLater(() -> new ManageQuestionsPage(this).setVisible(true));
+        });
+
         JButton viewResultsBtn = new JButton("View Results");
         UIUtils.applySecondaryButton(viewResultsBtn);
         viewResultsBtn.addActionListener(e -> JOptionPane.showMessageDialog(this, "View Results - feature coming soon.", "Results", JOptionPane.INFORMATION_MESSAGE));
