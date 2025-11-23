@@ -76,15 +76,15 @@ public class TeacherDashboard extends JFrame {
         cardGbc.weightx = 1;
         cardGbc.weighty = 1;
         
-        // Row 1: Create Quiz, Assign Quiz, Manage Questions
+        // Row 1: Manage Quizzes, Assign Quiz, Manage Questions
         cardGbc.gridx = 0;
         cardGbc.gridy = 0;
         cardsContainer.add(createActionCard(
-            "Create Quiz",
-            "Design new quiz content",
-            "📝",
+            "Manage Quizzes",
+            "Create and delete quizzes",
+            "🗂️",
             new Color(99, 102, 241),
-            e -> SwingUtilities.invokeLater(() -> new CreateQuizPage(this).setVisible(true))
+            e -> SwingUtilities.invokeLater(() -> new ManageQuizPage(this).setVisible(true))
         ), cardGbc);
         
         cardGbc.gridx = 1;
