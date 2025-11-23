@@ -3,7 +3,7 @@ package frontend;
 import backend.controllers.ReportController;
 import backend.controllers.QuizController;
 import backend.controllers.CourseController;
-import backend.dao.UserDAO;
+import backend.controllers.UserController;
 import backend.models.Report;
 import backend.models.User;
 import backend.models.Quiz;
@@ -26,7 +26,7 @@ public class ResultPage extends JDialog {
     private JTable table;
     private DefaultTableModel tableModel;
     private ReportController reportController = new ReportController();
-    private UserDAO userDAO = new UserDAO();
+    private UserController userController = new UserController();
     private QuizController quizController = new QuizController();
     private CourseController courseController = new CourseController();
     private AttemptController attemptController = new AttemptController();
@@ -109,17 +109,35 @@ public class ResultPage extends JDialog {
             studentCombo = null;
             loadReportsForStudent(current.getUserId());
         } else {
-            // populate studentCombo with students
-            List<User> users = userDAO.getAll();
-            DefaultComboBoxModel<User> model = new DefaultComboBoxModel<>();
-            if (users != null) {
-                for (User u : users) {
-                    if (u.getRole() == Role.STUDENT) model.addElement(u);
+            // populate studentCombo with students using UserController (cached) in background
+            // studentCombo instance was created in initUI; populate its model here
+            setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+            new SwingWorker<java.util.List<User>, Void>() {
+                Exception err;
+                @Override
+                protected java.util.List<User> doInBackground() {
+                    try { return userController.getAllUsers(); } catch (Exception e) { err = e; return null; }
                 }
-            }
-            studentCombo.setModel(model);
-            if (model.getSize() > 0) studentCombo.setSelectedIndex(0);
-            refreshTable();
+
+                @Override
+                protected void done() {
+                    try {
+                        if (err != null) throw err;
+                        java.util.List<User> users = get();
+                        DefaultComboBoxModel<User> model = new DefaultComboBoxModel<>();
+                        if (users != null) {
+                            for (User u : users) if (u.getRole() == Role.STUDENT) model.addElement(u);
+                        }
+                        studentCombo.setModel(model);
+                        if (model.getSize() > 0) studentCombo.setSelectedIndex(0);
+                        refreshTable();
+                    } catch (Exception ex) {
+                        JOptionPane.showMessageDialog(ResultPage.this, "Failed to load students: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    } finally {
+                        setCursor(Cursor.getDefaultCursor());
+                    }
+                }
+            }.execute();
         }
     }
 
