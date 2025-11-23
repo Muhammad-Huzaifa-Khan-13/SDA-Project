@@ -116,17 +116,74 @@ public class CreateQuizPage extends JDialog {
 
     private void loadCourses() {
         try {
-            int teacherId = Session.getInstance().getCurrentUser() != null ? Session.getInstance().getCurrentUser().getUserId() : 0;
-            List<Course> courses = courseController.getCoursesByTeacher(teacherId);
+            // Load all courses and deduplicate by course name (preserve first occurrence)
+            List<Course> courses = courseController.getAllCourses();
             DefaultComboBoxModel<Course> model = new DefaultComboBoxModel<>();
+
+            java.util.Map<String, Course> unique = new java.util.LinkedHashMap<>();
             if (courses != null) {
-                for (Course c : courses) model.addElement(c);
+                for (Course c : courses) {
+                    String name = c.getCourseName() != null ? c.getCourseName().trim().toLowerCase() : null;
+                    if (name != null && !unique.containsKey(name)) {
+                        unique.put(name, c);
+                    }
+                }
             }
-            courseCombo.setModel(model);
+
+            // If no unique courses found, attempt to create defaults only if missing
+            if (unique.isEmpty()) {
+                int teacherId = Session.getInstance().getCurrentUser() != null ? Session.getInstance().getCurrentUser().getUserId() : 0;
+                String[] defaults = new String[]{"OOP", "Programming Fundamentals", "Data Structures"};
+
+                // Only create defaults that do not already exist (case-insensitive match on name trimmed)
+                for (String name : defaults) {
+                    String key = name.trim().toLowerCase();
+                    boolean exists = unique.containsKey(key);
+                    if (!exists && courses != null) {
+                        for (Course c : courses) {
+                            if (c.getCourseName() != null && c.getCourseName().trim().equalsIgnoreCase(name)) {
+                                exists = true;
+                                unique.put(key, c);
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!exists) {
+                        try {
+                            boolean created = courseController.createCourse(name, teacherId);
+                            if (created) {
+                                // refresh the course list and add the newly created one
+                                List<Course> refreshed = courseController.getAllCourses();
+                                if (refreshed != null) {
+                                    for (Course rc : refreshed) {
+                                        if (rc.getCourseName() != null && rc.getCourseName().trim().equalsIgnoreCase(name) && !unique.containsKey(key)) {
+                                            unique.put(key, rc);
+                                            break;
+                                        }
+                                    }
+                                }
+                            }
+                        } catch (Exception ignore) {
+                            // fall back to placeholder below
+                        }
+                    }
+                }
+            }
+
+            // Populate model from unique map
+            for (Course c : unique.values()) model.addElement(c);
+
+            // If still empty for any reason, add placeholders and disable create
             if (model.getSize() == 0) {
-                courseCombo.addItem(new Course(0, "(no courses)", 0));
+                model.addElement(new Course(0, "(no courses)", 0));
                 createBtn.setEnabled(false);
+            } else {
+                createBtn.setEnabled(true);
             }
+
+            courseCombo.setModel(model);
+
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Failed to load courses: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
@@ -134,9 +191,36 @@ public class CreateQuizPage extends JDialog {
 
     private void createQuiz() {
         Course selected = (Course) courseCombo.getSelectedItem();
-        if (selected == null || selected.getCourseId() == 0) {
+        if (selected == null) {
             JOptionPane.showMessageDialog(this, "Please select a valid course", "Validation", JOptionPane.WARNING_MESSAGE);
             return;
+        }
+
+        if (selected.getCourseId() <= 0) {
+            // Try to persist placeholder course into DB so it has a valid ID
+            int teacherId = Session.getInstance().getCurrentUser() != null ? Session.getInstance().getCurrentUser().getUserId() : 0;
+            boolean created = false;
+            try {
+                created = courseController.createCourse(selected.getCourseName(), teacherId);
+            } catch (Exception ignore) {}
+
+            if (created) {
+                // refresh and pick the persisted course
+                List<Course> refreshed = courseController.getAllCourses();
+                if (refreshed != null) {
+                    for (Course rc : refreshed) {
+                        if (rc.getCourseName() != null && rc.getCourseName().equals(selected.getCourseName())) {
+                            selected = rc;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (selected.getCourseId() <= 0) {
+                JOptionPane.showMessageDialog(this, "Please select a valid course (unable to persist selected course)", "Validation", JOptionPane.WARNING_MESSAGE);
+                return;
+            }
         }
         String title = titleField.getText().trim();
         String type = (String) typeCombo.getSelectedItem();
@@ -151,16 +235,25 @@ public class CreateQuizPage extends JDialog {
             return;
         }
 
-        // try to fetch the created quiz (best-effort)
+        // try to fetch the created quiz (best-effort) - pick quiz with highest quizId as the most recent
         try {
             List<Quiz> quizzes = quizController.getQuizzesByCourse(selected.getCourseId());
             if (quizzes != null && !quizzes.isEmpty()) {
-                quizzes.sort(Comparator.comparing(Quiz::getCreatedAt, Comparator.nullsLast(Comparator.naturalOrder())));
-                createdQuiz = quizzes.get(quizzes.size()-1);
+                Quiz latest = null;
+                for (Quiz q : quizzes) {
+                    if (latest == null || q.getQuizId() > latest.getQuizId()) latest = q;
+                }
+                createdQuiz = latest;
             }
         } catch (Exception ignore) {}
 
-        addQuestionsBtn.setEnabled(true);
+        if (createdQuiz != null) {
+            addQuestionsBtn.setEnabled(true);
+            // show add question dialog immediately for convenience
+            new AddQuestionPage(this, createdQuiz.getQuizId()).setVisible(true);
+        } else {
+            addQuestionsBtn.setEnabled(false);
+        }
         JOptionPane.showMessageDialog(this, "Quiz created successfully.", "Success", JOptionPane.INFORMATION_MESSAGE);
     }
 }

@@ -94,9 +94,20 @@ public class AddQuestionPage extends JDialog {
             }
         });
 
+        // New Confirm and Return buttons
+        JButton confirmBtn = new JButton("Confirm");
+        UIUtils.applyPrimaryButton(confirmBtn);
+        confirmBtn.addActionListener(e -> addQuestionAndClose());
+
+        JButton returnBtn = new JButton("Return");
+        UIUtils.applySecondaryButton(returnBtn);
+        returnBtn.addActionListener(e -> handleReturn());
+
         JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER));
         btns.setOpaque(false);
         btns.add(addBtn);
+        btns.add(confirmBtn);
+        btns.add(returnBtn);
 
         gbc.gridx = 0; gbc.gridy = 7; gbc.gridwidth = 2;
         card.add(btns, gbc);
@@ -107,7 +118,7 @@ public class AddQuestionPage extends JDialog {
         add(root);
     }
 
-    private void addQuestion() {
+    private boolean addQuestion() {
         String qtext = questionArea.getText().trim();
         String a = optA.getText().trim();
         String b = optB.getText().trim();
@@ -117,19 +128,43 @@ public class AddQuestionPage extends JDialog {
 
         if (qtext.isEmpty() || a.isEmpty() || b.isEmpty() || c.isEmpty() || d.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please fill all fields", "Validation", JOptionPane.WARNING_MESSAGE);
-            return;
+            return false;
         }
 
         Question q = new Question(0, quizId, qtext, a, b, c, d, correct);
         boolean ok = questionController.addQuestion(q);
         if (!ok) {
             JOptionPane.showMessageDialog(this, "Failed to add question", "Error", JOptionPane.ERROR_MESSAGE);
-            return;
+            return false;
         }
 
         JOptionPane.showMessageDialog(this, "Question added.", "Success", JOptionPane.INFORMATION_MESSAGE);
         // clear fields
         questionArea.setText(""); optA.setText(""); optB.setText(""); optC.setText(""); optD.setText("");
         correctCombo.setSelectedIndex(0);
+        return true;
+    }
+
+    private void addQuestionAndClose() {
+        boolean ok = addQuestion();
+        if (ok) {
+            dispose();
+        }
+    }
+
+    private void handleReturn() {
+        boolean hasData = false;
+        if (!questionArea.getText().trim().isEmpty()) hasData = true;
+        if (!optA.getText().trim().isEmpty()) hasData = true;
+        if (!optB.getText().trim().isEmpty()) hasData = true;
+        if (!optC.getText().trim().isEmpty()) hasData = true;
+        if (!optD.getText().trim().isEmpty()) hasData = true;
+
+        if (hasData) {
+            int res = JOptionPane.showConfirmDialog(this, "Discard changes and return?", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+            if (res == JOptionPane.YES_OPTION) dispose();
+        } else {
+            dispose();
+        }
     }
 }
