@@ -3,54 +3,113 @@ package frontend;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.*;
+import backend.controllers.AuthController;
+import backend.enums.Role;
 
 public class RegisterPage extends JDialog {
 
     private JTextField usernameField;
+    private JTextField emailField;
     private JPasswordField passwordField;
     private JPasswordField confirmField;
+    private JComboBox<Role> roleCombo;
     private final JFrame parent;
+    private AuthController authController = new AuthController();
 
     public RegisterPage(JFrame parent) {
         super(parent, "Register - Quiz Management System", true);
         this.parent = parent;
-        setSize(420, 360);
+        setSize(550, 550);
         setLocationRelativeTo(parent);
         setResizable(false);
 
+        // Outer panel
         JPanel panel = new JPanel(new GridBagLayout());
-        panel.setBackground(new Color(240, 240, 240));
+        panel.setBackground(UIUtils.BACKGROUND);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(10, 10, 10, 10);
 
+        // Card
+        JPanel card = UIUtils.createCardPanel();
+        card.setLayout(new GridBagLayout());
+        GridBagConstraints c = new GridBagConstraints();
+        c.insets = new Insets(8,8,8,8);
+
         JLabel title = new JLabel("Create an Account");
-        title.setFont(new Font("Arial", Font.BOLD, 18));
-        gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
-        panel.add(title, gbc);
+        title.setFont(UIUtils.TITLE_FONT);
+        title.setForeground(UIUtils.PRIMARY);
+        c.gridx = 0; c.gridy = 0; c.gridwidth = 2;
+        card.add(title, c);
 
-        gbc.gridwidth = 1;
-        gbc.gridx = 0; gbc.gridy = 1;
-        panel.add(new JLabel("Username:"), gbc);
-        usernameField = new JTextField(18);
-        gbc.gridx = 1;
-        panel.add(usernameField, gbc);
+        c.gridwidth = 1;
+        c.gridx = 0; c.gridy = 1;
+        JLabel nameLabel = new JLabel("Name:");
+        nameLabel.setFont(UIUtils.REGULAR_FONT);
+        card.add(nameLabel, c);
+        usernameField = new JTextField(20);
+        usernameField.setFont(UIUtils.REGULAR_FONT);
+        // improve visibility and size
+        usernameField.setPreferredSize(new Dimension(260, 28));
+        usernameField.setCaretColor(UIUtils.PRIMARY);
+        usernameField.setForeground(Color.BLACK);
+        usernameField.setBackground(Color.WHITE);
+        usernameField.setOpaque(true);
+        c.gridx = 1;
+        card.add(usernameField, c);
 
-        gbc.gridx = 0; gbc.gridy = 2;
-        panel.add(new JLabel("Password:"), gbc);
-        passwordField = new JPasswordField(18);
-        gbc.gridx = 1;
-        panel.add(passwordField, gbc);
+        c.gridx = 0; c.gridy = 2;
+        JLabel emailLabel = new JLabel("Email:");
+        emailLabel.setFont(UIUtils.REGULAR_FONT);
+        card.add(emailLabel, c);
+        emailField = new JTextField(20);
+        emailField.setFont(UIUtils.REGULAR_FONT);
+        emailField.setPreferredSize(new Dimension(260, 28));
+        emailField.setCaretColor(UIUtils.PRIMARY);
+        emailField.setForeground(Color.BLACK);
+        emailField.setBackground(Color.WHITE);
+        emailField.setOpaque(true);
+        c.gridx = 1;
+        card.add(emailField, c);
 
-        gbc.gridx = 0; gbc.gridy = 3;
-        panel.add(new JLabel("Confirm Password:"), gbc);
-        confirmField = new JPasswordField(18);
-        gbc.gridx = 1;
-        panel.add(confirmField, gbc);
+        c.gridx = 0; c.gridy = 3;
+        JLabel passLabel = new JLabel("Password:");
+        passLabel.setFont(UIUtils.REGULAR_FONT);
+        card.add(passLabel, c);
+        passwordField = new JPasswordField(20);
+        passwordField.setFont(UIUtils.REGULAR_FONT);
+        passwordField.setPreferredSize(new Dimension(260, 28));
+        passwordField.setCaretColor(UIUtils.PRIMARY);
+        passwordField.setForeground(Color.BLACK);
+        passwordField.setBackground(Color.WHITE);
+        passwordField.setOpaque(true);
+        c.gridx = 1;
+        card.add(passwordField, c);
+
+        c.gridx = 0; c.gridy = 4;
+        JLabel confirmLabel = new JLabel("Confirm Password:");
+        confirmLabel.setFont(UIUtils.REGULAR_FONT);
+        card.add(confirmLabel, c);
+        confirmField = new JPasswordField(20);
+        confirmField.setFont(UIUtils.REGULAR_FONT);
+        confirmField.setPreferredSize(new Dimension(260, 28));
+        confirmField.setCaretColor(UIUtils.PRIMARY);
+        confirmField.setForeground(Color.BLACK);
+        confirmField.setBackground(Color.WHITE);
+        confirmField.setOpaque(true);
+        c.gridx = 1;
+        card.add(confirmField, c);
+
+        c.gridx = 0; c.gridy = 5;
+        JLabel roleLabel = new JLabel("Role:");
+        roleLabel.setFont(UIUtils.REGULAR_FONT);
+        card.add(roleLabel, c);
+        roleCombo = new JComboBox<>(Role.values());
+        roleCombo.setPreferredSize(new Dimension(260, 28));
+        c.gridx = 1;
+        card.add(roleCombo, c);
 
         JButton registerBtn = new JButton("Register");
-        registerBtn.setBackground(new Color(120, 220, 140));
-        registerBtn.setForeground(Color.white);
-        registerBtn.setFocusPainted(false);
+        UIUtils.applyPrimaryButton(registerBtn);
         registerBtn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 performRegister();
@@ -58,7 +117,7 @@ public class RegisterPage extends JDialog {
         });
 
         JButton cancelBtn = new JButton("Cancel");
-        cancelBtn.setFocusPainted(false);
+        UIUtils.applySecondaryButton(cancelBtn);
         cancelBtn.addActionListener(new ActionListener() {
             public void actionPerformed(ActionEvent e) {
                 dispose();
@@ -66,13 +125,16 @@ public class RegisterPage extends JDialog {
             }
         });
 
-        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 10, 0));
+        JPanel btnPanel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
         btnPanel.setOpaque(false);
         btnPanel.add(registerBtn);
         btnPanel.add(cancelBtn);
 
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
-        panel.add(btnPanel, gbc);
+        c.gridx = 0; c.gridy = 6; c.gridwidth = 2;
+        card.add(btnPanel, c);
+
+        gbc.gridx = 0; gbc.gridy = 0; gbc.anchor = GridBagConstraints.CENTER;
+        panel.add(card, gbc);
 
         add(panel);
 
@@ -87,19 +149,37 @@ public class RegisterPage extends JDialog {
     }
 
     private void performRegister() {
-        String username = usernameField.getText().trim();
+        String name = usernameField.getText().trim();
+        String email = emailField.getText().trim();
         String pass = new String(passwordField.getPassword());
         String confirm = new String(confirmField.getPassword());
+        Role role = (Role) roleCombo.getSelectedItem();
 
-        if (username.isEmpty() || pass.isEmpty() || confirm.isEmpty()) {
+        if (name.isEmpty() || email.isEmpty() || pass.isEmpty() || confirm.isEmpty()) {
             JOptionPane.showMessageDialog(this, "Please fill all fields", "Validation", JOptionPane.WARNING_MESSAGE);
             return;
         }
+
+        if (!UIUtils.isValidEmail(email)) {
+            JOptionPane.showMessageDialog(this, "Please enter a valid email address", "Validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+
         if (!pass.equals(confirm)) {
             JOptionPane.showMessageDialog(this, "Passwords do not match", "Validation", JOptionPane.WARNING_MESSAGE);
             return;
         }
 
-      
+        // Call backend AuthController to register
+        boolean ok = authController.register(name, email, pass, role);
+
+        if (!ok) {
+            JOptionPane.showMessageDialog(this, "Registration failed. Email may already exist.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        JOptionPane.showMessageDialog(this, "Registration successful. You can now login.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        dispose();
+        parent.setVisible(true);
     }
 }

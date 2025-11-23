@@ -21,4 +21,9 @@ public class Course {
 
     public int getTeacherId() { return teacherId; }
     public void setTeacherId(int teacherId) { this.teacherId = teacherId; }
+
+    @Override
+    public String toString() {
+        return courseName != null ? courseName : "Course #" + courseId;
+    }
 }
