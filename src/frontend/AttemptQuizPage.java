@@ -79,6 +79,18 @@ public class AttemptQuizPage extends JDialog {
         c.gridx = 0; c.gridy = 2;
         topCard.add(new JLabel("Quiz:"), c);
         quizCombo = new JComboBox<>();
+        // render quiz title in combo
+        quizCombo.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof backend.models.Quiz) {
+                    backend.models.Quiz q = (backend.models.Quiz) value;
+                    setText(q.getTitle() != null ? q.getTitle() : ("Quiz #" + q.getQuizId()));
+                }
+                return this;
+            }
+        });
         quizCombo.setPreferredSize(new Dimension(420, 28));
         c.gridx = 1; topCard.add(quizCombo, c);
 
@@ -140,24 +152,13 @@ public class AttemptQuizPage extends JDialog {
         try {
             java.util.List<Course> courses = courseController.getAllCourses();
             DefaultComboBoxModel<Course> model = new DefaultComboBoxModel<>();
-
-            // Deduplicate by course name (case-insensitive trim) to avoid duplicate entries like multiple "OOP"
-            java.util.Map<String, Course> unique = new java.util.LinkedHashMap<>();
-            if (courses != null) {
-                for (Course c : courses) {
-                    String name = c.getCourseName() != null ? c.getCourseName().trim().toLowerCase() : null;
-                    if (name == null || name.isEmpty()) continue;
-                    if (!unique.containsKey(name)) unique.put(name, c);
-                }
+            java.util.List<Course> deduped = UIUtils.dedupeCoursesByName(courses);
+            if (deduped != null) {
+                for (Course c : deduped) model.addElement(c);
             }
-
-            for (Course c : unique.values()) model.addElement(c);
-
-            // Fallback: if dedup produced no items (unlikely), fall back to original list
             if (model.getSize() == 0 && courses != null) {
                 for (Course c : courses) model.addElement(c);
             }
-
             courseCombo.setModel(model);
             if (model.getSize() > 0) {
                 courseCombo.setSelectedIndex(0);
@@ -173,20 +174,18 @@ public class AttemptQuizPage extends JDialog {
             DefaultComboBoxModel<Quiz> model = new DefaultComboBoxModel<>();
 
             // If current user is a student, show only quizzes assigned to them for this course
+            java.util.List<Quiz> quizzes;
             if (Session.getInstance().getCurrentUser() != null && Session.getInstance().getCurrentUser().getRole() == Role.STUDENT) {
                 int studentId = Session.getInstance().getCurrentUser().getUserId();
-                java.util.List<Quiz> assigned = assignmentController.getAssignedQuizzesForStudentAndCourse(studentId, courseId);
-                if (assigned != null && !assigned.isEmpty()) {
-                    for (Quiz q : assigned) model.addElement(q);
-                } else {
-                    // no assigned quizzes: show none (or fallback to all quizzes if desired)
-                    // leaving list empty informs student there are no assigned quizzes for this course
-                }
+                quizzes = assignmentController.getAssignedQuizzesForStudentAndCourse(studentId, courseId);
             } else {
-                java.util.List<Quiz> quizzes = quizController.getQuizzesByCourse(courseId);
-                if (quizzes != null) {
-                    for (Quiz q : quizzes) model.addElement(q);
-                }
+                quizzes = quizController.getQuizzesByCourse(courseId);
+            }
+
+            // dedupe by title so only one 'OOP' appears
+            java.util.List<Quiz> deduped = UIUtils.dedupeQuizzesByTitle(quizzes);
+            if (deduped != null) {
+                for (Quiz q : deduped) model.addElement(q);
             }
 
             quizCombo.setModel(model);

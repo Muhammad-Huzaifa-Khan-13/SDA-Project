@@ -69,7 +69,7 @@ public class ManageQuizPage extends JDialog {
 
         quizListModel = new DefaultListModel<>();
         quizList = new JList<>(quizListModel);
-        quizList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        quizList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         quizList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
@@ -90,8 +90,8 @@ public class ManageQuizPage extends JDialog {
         root.add(new JScrollPane(quizList), BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 12));
-        JButton deleteBtn = new JButton("Delete Selected Quiz");
-        deleteBtn.addActionListener(e -> deleteSelectedQuiz());
+        JButton deleteBtn = new JButton("Delete Selected");
+        deleteBtn.addActionListener(e -> deleteSelectedQuizzes());
         JButton closeBtn = new JButton("Close");
         closeBtn.addActionListener(e -> dispose());
         bottom.add(deleteBtn);
@@ -129,20 +129,22 @@ public class ManageQuizPage extends JDialog {
                 try {
                     if (error != null) throw error;
 
-                    // update course cache and combo
+                    // update course cache and combo (deduped by name)
                     courseCache.clear();
                     courseCombo.removeAllItems();
-                    if (courses != null) {
-                        for (Course c : courses) {
+                    java.util.List<Course> dedupedCourses = UIUtils.dedupeCoursesByName(courses);
+                    if (dedupedCourses != null) {
+                        for (Course c : dedupedCourses) {
                             courseCache.put(c.getCourseId(), c);
                             courseCombo.addItem(c);
                         }
                     }
 
-                    // update quiz list
+                    // update quiz list (dedupe by title)
                     quizListModel.clear();
-                    if (quizzes != null) {
-                        for (Quiz q : quizzes) quizListModel.addElement(q);
+                    java.util.List<Quiz> deduped = UIUtils.dedupeQuizzesByTitle(quizzes);
+                    if (deduped != null) {
+                        for (Quiz q : deduped) quizListModel.addElement(q);
                     }
                 } catch (Exception e) {
                     JOptionPane.showMessageDialog(ManageQuizPage.this, "Failed to load data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -181,20 +183,25 @@ public class ManageQuizPage extends JDialog {
         }
     }
 
-    private void deleteSelectedQuiz() {
-        Quiz sel = quizList.getSelectedValue();
-        if (sel == null) { JOptionPane.showMessageDialog(this, "Please select a quiz to delete", "Validation", JOptionPane.WARNING_MESSAGE); return; }
-        int res = JOptionPane.showConfirmDialog(this, "Delete selected quiz and all its questions?", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+    private void deleteSelectedQuizzes() {
+        java.util.List<Quiz> selected = quizList.getSelectedValuesList();
+        if (selected == null || selected.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please select one or more quizzes to delete", "Validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int res = JOptionPane.showConfirmDialog(this, "Delete selected quizzes and all their questions?", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (res != JOptionPane.YES_OPTION) return;
 
-        // Delete associated questions first (so numbering resets when recreated)
-        boolean ok = quizController.deleteQuiz(sel.getQuizId());
-        if (ok) {
-            JOptionPane.showMessageDialog(this, "Quiz deleted.", "Success", JOptionPane.INFORMATION_MESSAGE);
-            // refresh in background
-            loadDataAsync();
-        } else {
-            JOptionPane.showMessageDialog(this, "Failed to delete quiz.", "Error", JOptionPane.ERROR_MESSAGE);
+        boolean anyFailed = false;
+        for (Quiz q : selected) {
+            try {
+                boolean ok = quizController.deleteQuiz(q.getQuizId());
+                if (!ok) anyFailed = true;
+            } catch (Exception ignore) { anyFailed = true; }
         }
+
+        if (anyFailed) JOptionPane.showMessageDialog(this, "Some quizzes may not have been deleted.", "Partial Result", JOptionPane.WARNING_MESSAGE);
+        else JOptionPane.showMessageDialog(this, "Selected quizzes deleted.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        loadDataAsync();
     }
 }

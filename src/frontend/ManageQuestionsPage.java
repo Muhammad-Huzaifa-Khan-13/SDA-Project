@@ -74,6 +74,7 @@ public class ManageQuestionsPage extends JDialog {
 
         listModel = new DefaultListModel<>();
         questionList = new JList<>(listModel);
+        questionList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         questionList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
@@ -92,8 +93,8 @@ public class ManageQuestionsPage extends JDialog {
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 12));
         addBtn = new JButton("Add Question");
         addBtn.addActionListener(e -> openAddQuestion());
-        deleteBtn = new JButton("Delete Question");
-        deleteBtn.addActionListener(e -> deleteSelectedQuestion());
+        deleteBtn = new JButton("Delete Selected");
+        deleteBtn.addActionListener(e -> deleteSelectedQuestions());
         JButton closeBtn = new JButton("Close");
         closeBtn.addActionListener(e -> dispose());
 
@@ -118,12 +119,12 @@ public class ManageQuestionsPage extends JDialog {
             @Override
             protected List<Quiz> doInBackground() {
                 try {
-                    // Prefetch all course names into cache in one call
                     try {
                         List<Course> courses = courseController.getAllCourses();
                         courseNameCache.clear();
                         if (courses != null) {
-                            for (Course c : courses) {
+                            java.util.List<Course> dedupedCourses = UIUtils.dedupeCoursesByName(courses);
+                            for (Course c : dedupedCourses) {
                                 courseNameCache.put(c.getCourseId(), c.getCourseName());
                             }
                         }
@@ -131,7 +132,9 @@ public class ManageQuestionsPage extends JDialog {
                         // leave cache empty; renderer will show fallback
                     }
 
-                    return quizController.getAllQuizzes();
+                    // return deduped quizzes by title
+                    java.util.List<Quiz> all = quizController.getAllQuizzes();
+                    return UIUtils.dedupeQuizzesByTitle(all);
                 } catch (Exception e) {
                     error = e;
                     return null;
@@ -206,21 +209,26 @@ public class ManageQuestionsPage extends JDialog {
         loadQuestionsForSelectedQuiz();
     }
 
-    private void deleteSelectedQuestion() {
-        Question sel = questionList.getSelectedValue();
-        if (sel == null) {
-            JOptionPane.showMessageDialog(this, "Please select a question to delete", "Validation", JOptionPane.WARNING_MESSAGE);
+    private void deleteSelectedQuestions() {
+        java.util.List<Question> selected = questionList.getSelectedValuesList();
+        if (selected == null || selected.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please select one or more questions to delete", "Validation", JOptionPane.WARNING_MESSAGE);
             return;
         }
-        int res = JOptionPane.showConfirmDialog(this, "Delete selected question?", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+        int res = JOptionPane.showConfirmDialog(this, "Delete selected questions?", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (res != JOptionPane.YES_OPTION) return;
-        boolean ok = questionController.deleteQuestion(sel.getQuestionId());
-        if (ok) {
-            JOptionPane.showMessageDialog(this, "Question deleted.", "Success", JOptionPane.INFORMATION_MESSAGE);
-            loadQuestionsForSelectedQuiz();
-        } else {
-            JOptionPane.showMessageDialog(this, "Failed to delete question.", "Error", JOptionPane.ERROR_MESSAGE);
+
+        boolean anyFailed = false;
+        for (Question q : selected) {
+            try {
+                boolean ok = questionController.deleteQuestion(q.getQuestionId());
+                if (!ok) anyFailed = true;
+            } catch (Exception ignore) { anyFailed = true; }
         }
+
+        if (anyFailed) JOptionPane.showMessageDialog(this, "Some questions may not have been deleted.", "Partial Result", JOptionPane.WARNING_MESSAGE);
+        else JOptionPane.showMessageDialog(this, "Selected questions deleted.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        loadQuestionsForSelectedQuiz();
     }
 
     // Utility to toggle UI state while loading data

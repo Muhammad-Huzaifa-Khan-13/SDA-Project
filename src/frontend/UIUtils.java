@@ -1,8 +1,14 @@
 package frontend;
 
+import backend.models.Quiz;
+import backend.models.Course;
+
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.regex.Pattern;
 
 public class UIUtils {
@@ -47,4 +53,41 @@ public class UIUtils {
         if (email == null) return false;
         return EMAIL_REGEX.matcher(email).matches();
     }
+
+    // Deduplicate quizzes by title (case-insensitive, trimmed). Preserves first occurrence order.
+    public static List<Quiz> dedupeQuizzesByTitle(List<Quiz> quizzes) {
+        List<Quiz> out = new ArrayList<>();
+        if (quizzes == null || quizzes.isEmpty()) return out;
+        LinkedHashMap<String, Quiz> map = new LinkedHashMap<>();
+        for (Quiz q : quizzes) {
+            if (q == null) continue;
+            String title = q.getTitle() != null ? q.getTitle().trim().toLowerCase() : null;
+            if (title == null || title.isEmpty()) {
+                // use id as key for untitled quizzes to avoid clobbering
+                title = "__untitled__" + q.getQuizId();
+            }
+            if (!map.containsKey(title)) map.put(title, q);
+        }
+        out.addAll(map.values());
+        return out;
+    }
+
+    // Deduplicate courses by name (case-insensitive, trimmed). Preserves first occurrence.
+    public static List<Course> dedupeCoursesByName(List<Course> courses) {
+        List<Course> out = new ArrayList<>();
+        if (courses == null || courses.isEmpty()) return out;
+        LinkedHashMap<String, Course> map = new LinkedHashMap<>();
+        for (Course c : courses) {
+            if (c == null) continue;
+            String name = c.getCourseName() != null ? c.getCourseName().trim().toLowerCase() : null;
+            if (name == null || name.isEmpty()) {
+                name = "__course__" + c.getCourseId();
+            }
+            if (!map.containsKey(name)) map.put(name, c);
+        }
+        out.addAll(map.values());
+        return out;
+    }
+
+    // ...existing nested classes (RoundedPanel, RoundedButton, etc.)
 }

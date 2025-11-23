@@ -3,9 +3,11 @@ package frontend;
 import backend.controllers.AssignmentController;
 import backend.controllers.CourseController;
 import backend.controllers.QuizController;
+import backend.controllers.UserController;
 import backend.models.Course;
 import backend.models.Quiz;
 import backend.models.QuizAssignment;
+import backend.models.User;
 
 import javax.swing.*;
 import java.awt.*;
@@ -17,16 +19,19 @@ public class AssignQuizPage extends JDialog {
 
     private JComboBox<Course> courseCombo;
     private JComboBox<Quiz> quizCombo;
-    private JTextField studentIdsField;
+    private JList<User> studentList;
+    private DefaultListModel<User> studentListModel;
+    private JCheckBox assignAllCheck;
     private JButton assignBtn;
 
     private CourseController courseController = new CourseController();
     private QuizController quizController = new QuizController();
     private AssignmentController assignmentController = new AssignmentController();
+    private UserController userController = new UserController();
 
     public AssignQuizPage(JFrame parent) {
         super(parent, "Assign Quiz", true);
-        setSize(560, 260);
+        setSize(740, 520);
         setLocationRelativeTo(parent);
         setResizable(false);
 
@@ -35,10 +40,10 @@ public class AssignQuizPage extends JDialog {
     }
 
     private void initUI() {
-        JPanel root = new JPanel(new GridBagLayout());
+        // Use BorderLayout so controls don't get clipped
+        JPanel root = new JPanel(new BorderLayout(12,12));
         root.setBackground(UIUtils.BACKGROUND);
-        GridBagConstraints c = new GridBagConstraints();
-        c.insets = new Insets(10,10,10,10);
+        root.setBorder(BorderFactory.createEmptyBorder(12,12,12,12));
 
         JPanel card = UIUtils.createCardPanel();
         card.setLayout(new GridBagLayout());
@@ -52,63 +57,121 @@ public class AssignQuizPage extends JDialog {
         gbc.gridx = 0; gbc.gridy = 0; gbc.gridwidth = 2;
         card.add(title, gbc);
 
-        gbc.gridwidth = 1;
-        gbc.gridx = 0; gbc.gridy = 1;
+        gbc.gridwidth = 1; gbc.gridy = 1; gbc.gridx = 0;
         card.add(new JLabel("Course:"), gbc);
         courseCombo = new JComboBox<>();
-        courseCombo.setPreferredSize(new Dimension(320, 28));
+        courseCombo.setPreferredSize(new Dimension(360, 28));
         gbc.gridx = 1; card.add(courseCombo, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 2;
+        gbc.gridy = 2; gbc.gridx = 0;
         card.add(new JLabel("Quiz:"), gbc);
         quizCombo = new JComboBox<>();
-        quizCombo.setPreferredSize(new Dimension(320, 28));
-        gbc.gridx = 1; card.add(quizCombo, gbc);
-
-        gbc.gridx = 0; gbc.gridy = 3;
-        card.add(new JLabel("Student IDs (comma-separated):"), gbc);
-        studentIdsField = new JTextField();
-        studentIdsField.setPreferredSize(new Dimension(320, 28));
-        gbc.gridx = 1; card.add(studentIdsField, gbc);
-
-        assignBtn = new JButton("Assign Quiz");
-        UIUtils.applyPrimaryButton(assignBtn);
-        assignBtn.addActionListener(new ActionListener() {
+        // show quiz title in combobox
+        quizCombo.setRenderer(new DefaultListCellRenderer() {
             @Override
-            public void actionPerformed(ActionEvent e) {
-                assignQuiz();
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof backend.models.Quiz) {
+                    backend.models.Quiz q = (backend.models.Quiz) value;
+                    setText(q.getTitle() != null ? q.getTitle() : ("Quiz #" + q.getQuizId()));
+                }
+                return this;
             }
         });
+        quizCombo.setPreferredSize(new Dimension(360, 28));
+        gbc.gridx = 1; card.add(quizCombo, gbc);
 
-        JPanel btns = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        btns.setOpaque(false);
-        btns.add(assignBtn);
+        gbc.gridy = 3; gbc.gridx = 0;
+        card.add(new JLabel("Students (multi-select):"), gbc);
+        studentListModel = new DefaultListModel<>();
+        studentList = new JList<>(studentListModel);
+        studentList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+        studentList.setVisibleRowCount(8);
+        studentList.setCellRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                if (value instanceof User) {
+                    User u = (User) value;
+                    setText(u.getName() + " (" + u.getEmail() + ")");
+                }
+                return this;
+            }
+        });
+        JScrollPane studentScroll = new JScrollPane(studentList);
+        studentScroll.setPreferredSize(new Dimension(360, 160));
+        gbc.gridx = 1; card.add(studentScroll, gbc);
 
-        gbc.gridx = 0; gbc.gridy = 4; gbc.gridwidth = 2;
-        card.add(btns, gbc);
+        gbc.gridy = 4; gbc.gridx = 0; gbc.gridwidth = 2;
+        assignAllCheck = new JCheckBox("Assign to ALL students in course");
+        assignAllCheck.setOpaque(false);
+        card.add(assignAllCheck, gbc);
 
-        c.gridx = 0; c.gridy = 0;
-        root.add(card, c);
+        // Bottom action area
+        JPanel bottom = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        bottom.setOpaque(false);
+        assignBtn = new JButton("Assign Quiz");
+        UIUtils.applyPrimaryButton(assignBtn);
+        assignBtn.addActionListener(e -> assignQuiz());
+        JButton close = new JButton("Close");
+        UIUtils.applySecondaryButton(close);
+        close.addActionListener(ev -> dispose());
+        bottom.add(close);
+        bottom.add(assignBtn);
+
+        root.add(card, BorderLayout.CENTER);
+        root.add(bottom, BorderLayout.SOUTH);
         add(root);
 
         courseCombo.addActionListener(ev -> {
             Course sel = (Course) courseCombo.getSelectedItem();
             loadQuizzesForCourse(sel != null ? sel.getCourseId() : 0);
         });
+
+        // populate students
+        loadStudents();
     }
 
     private void loadCourses() {
         try {
             int teacherId = Session.getInstance().getCurrentUser() != null ? Session.getInstance().getCurrentUser().getUserId() : 0;
-            List<Course> courses = courseController.getCoursesByTeacher(teacherId);
-            DefaultComboBoxModel<Course> model = new DefaultComboBoxModel<>();
-            if (courses != null) {
-                for (Course c : courses) model.addElement(c);
+            List<Course> courses = null;
+            if (teacherId > 0) {
+                courses = courseController.getCoursesByTeacher(teacherId);
             }
-            courseCombo.setModel(model);
-            if (model.getSize() > 0) {
+            // Fallback: if teacher has no courses or teacherId invalid, show all courses
+            if (courses == null || courses.isEmpty()) {
+                courses = courseController.getAllCourses();
+            }
+            // dedupe courses by name to collapse duplicates like multiple 'OOP'
+            java.util.List<Course> dedupedCourses = UIUtils.dedupeCoursesByName(courses);
+            DefaultComboBoxModel<Course> model = new DefaultComboBoxModel<>();
+            if (dedupedCourses != null) {
+                for (Course c : dedupedCourses) model.addElement(c);
+            }
+            if (model.getSize() == 0) {
+                // No courses found anywhere
+                courseCombo.setModel(new DefaultComboBoxModel<>(new Course[]{new Course(0, "(No courses available)", 0)}));
+                courseCombo.setEnabled(false);
+                // populate quizzes with all quizzes as a fallback
+                DefaultComboBoxModel<Quiz> qm = new DefaultComboBoxModel<>();
+                java.util.List<Quiz> all = quizController.getAllQuizzes();
+                if (all != null) for (Quiz q : all) qm.addElement(q);
+                quizCombo.setModel(qm);
+                if (qm.getSize() == 0) {
+                    quizCombo.setModel(new DefaultComboBoxModel<>(new Quiz[]{new Quiz(0, 0, "(No quizzes available)", "", null)}));
+                    quizCombo.setEnabled(false);
+                    assignBtn.setEnabled(false);
+                } else {
+                    quizCombo.setEnabled(true);
+                    assignBtn.setEnabled(true);
+                }
+            } else {
+                courseCombo.setModel(model);
+                courseCombo.setEnabled(true);
                 courseCombo.setSelectedIndex(0);
-                loadQuizzesForCourse(((Course)model.getElementAt(0)).getCourseId());
+                // ensure quizzes load for the first course
+                SwingUtilities.invokeLater(() -> loadQuizzesForCourse(((Course)model.getElementAt(0)).getCourseId()));
             }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Failed to load courses: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
@@ -119,19 +182,44 @@ public class AssignQuizPage extends JDialog {
         try {
             DefaultComboBoxModel<Quiz> model = new DefaultComboBoxModel<>();
             java.util.List<Quiz> quizzes = quizController.getQuizzesByCourse(courseId);
-            if (quizzes != null) {
-                for (Quiz q : quizzes) model.addElement(q);
+            // dedupe by title to avoid multiple entries with same title
+            java.util.List<Quiz> deduped = UIUtils.dedupeQuizzesByTitle(quizzes);
+            if (deduped != null) {
+                for (Quiz q : deduped) model.addElement(q);
             }
-            quizCombo.setModel(model);
+            if (model.getSize() == 0) {
+                // show placeholder and disable assign if no quizzes
+                quizCombo.setModel(new DefaultComboBoxModel<>(new Quiz[]{new Quiz(0, 0, "(No quizzes for this course)", "", null)}));
+                quizCombo.setEnabled(false);
+                assignBtn.setEnabled(false);
+            } else {
+                quizCombo.setModel(model);
+                quizCombo.setEnabled(true);
+                assignBtn.setEnabled(true);
+            }
         } catch (Exception ex) {
             JOptionPane.showMessageDialog(this, "Failed to load quizzes: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void loadStudents() {
+        try {
+            java.util.List<User> users = userController.getAllUsers();
+            studentListModel.clear();
+            if (users != null) {
+                for (User u : users) {
+                    if (u.getRole() == backend.enums.Role.STUDENT) studentListModel.addElement(u);
+                }
+            }
+        } catch (Exception ex) {
+            JOptionPane.showMessageDialog(this, "Failed to load students: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
     private void assignQuiz() {
         Quiz selectedQuiz = (Quiz) quizCombo.getSelectedItem();
         Course selectedCourse = (Course) courseCombo.getSelectedItem();
-        String studentIds = studentIdsField.getText().trim();
+        String studentIds = "";
         if (selectedQuiz == null) {
             JOptionPane.showMessageDialog(this, "Please select a quiz", "Validation", JOptionPane.WARNING_MESSAGE);
             return;
@@ -147,12 +235,20 @@ public class AssignQuizPage extends JDialog {
         assignment.setCourseId(selectedCourse.getCourseId());
 
         try {
-            if (studentIds.isEmpty()) {
-                int confirm = JOptionPane.showConfirmDialog(this, "No student IDs provided. Assign to ALL students enrolled in this course?", "Confirm", JOptionPane.YES_NO_OPTION);
-                if (confirm != JOptionPane.YES_OPTION) return;
+            if (assignAllCheck.isSelected()) {
                 assignment.setStudentId("ALL");
             } else {
-                assignment.setStudentId(studentIds);
+                List<User> selected = studentList.getSelectedValuesList();
+                if (selected == null || selected.isEmpty()) {
+                    JOptionPane.showMessageDialog(this, "Please select one or more students or choose 'Assign to ALL'", "Validation", JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+                StringBuilder sb = new StringBuilder();
+                for (User u : selected) {
+                    if (sb.length() > 0) sb.append(",");
+                    sb.append(u.getUserId());
+                }
+                assignment.setStudentId(sb.toString());
             }
 
             assignmentController.assignQuiz(assignment);
