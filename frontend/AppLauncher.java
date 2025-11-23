@@ -4,7 +4,6 @@ import javax.swing.*;
 
 public class AppLauncher {
     public static void main(String[] args) {
-        // Set a modern Look & Feel (Nimbus) if available
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {
                 if ("Nimbus".equals(info.getName())) {
