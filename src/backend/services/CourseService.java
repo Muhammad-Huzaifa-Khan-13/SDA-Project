@@ -21,4 +21,9 @@ public class CourseService {
     public List<Course> getAllCourses() {
         return courseDAO.getAll();
     }
+
+    // New helper to fetch a course by id
+    public Course getCourseById(int id) {
+        return courseDAO.getById(id);
+    }
 }

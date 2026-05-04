@@ -38,7 +38,8 @@ public class QuestionDAO {
     }
 
     public List<Question> getByQuizId(int quizId) {
-        String sql = "SELECT * FROM questions WHERE quiz_id = ?";
+        // Ensure stable ordering by question_id so UI numbering is predictable
+        String sql = "SELECT * FROM questions WHERE quiz_id = ? ORDER BY question_id ASC";
         List<Question> list = new ArrayList<>();
 
         try (Connection conn = DatabaseConnection.getConnection();
@@ -87,6 +88,23 @@ public class QuestionDAO {
 
         } catch (Exception e) {
             System.out.println("Delete Question Error: " + e.getMessage());
+        }
+        return false;
+    }
+
+    // Delete all questions for a given quiz id
+    public boolean deleteByQuiz(int quizId) {
+        String sql = "DELETE FROM questions WHERE quiz_id = ?";
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+
+            stmt.setInt(1, quizId);
+            stmt.executeUpdate();
+            return true;
+
+        } catch (Exception e) {
+            System.out.println("DeleteByQuiz Error: " + e.getMessage());
         }
         return false;
     }

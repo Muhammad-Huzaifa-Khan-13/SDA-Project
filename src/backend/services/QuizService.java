@@ -1,6 +1,7 @@
 package backend.services;
 
 import backend.dao.QuizDAO;
+import backend.dao.QuestionDAO;
 import backend.models.Quiz;
 
 import java.util.List;
@@ -8,6 +9,10 @@ import java.util.List;
 public class QuizService {
 
     private QuizDAO quizDAO = new QuizDAO();
+    private QuestionDAO questionDAO = new QuestionDAO();
+    private backend.dao.AnswerDAO answerDAO = new backend.dao.AnswerDAO();
+    private backend.dao.GradeDAO gradeDAO = new backend.dao.GradeDAO();
+    private backend.dao.AttemptDAO attemptDAO = new backend.dao.AttemptDAO();
 
     public boolean createQuiz(int courseId, String title, String quizType) {
         Quiz quiz = new Quiz(0, courseId, title, quizType, null);
@@ -31,6 +36,14 @@ public class QuizService {
     }
 
     public boolean deleteQuiz(int quizId) {
+        // delete associated answers for questions of this quiz
+        answerDAO.deleteByQuiz(quizId);
+        // delete grades for attempts of this quiz
+        gradeDAO.deleteByQuiz(quizId);
+        // delete attempts for this quiz
+        attemptDAO.deleteByQuiz(quizId);
+        // delete associated questions first to keep DB consistent
+        questionDAO.deleteByQuiz(quizId);
         return quizDAO.delete(quizId);
     }
 }

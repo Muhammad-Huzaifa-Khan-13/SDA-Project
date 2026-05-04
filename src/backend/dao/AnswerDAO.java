@@ -73,6 +73,34 @@ public class AnswerDAO {
         return list;
     }
 
+    // Delete answers for a given question id
+    public boolean deleteByQuestion(int questionId) {
+        String sql = "DELETE FROM answers WHERE question_id = ?";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, questionId);
+            stmt.executeUpdate();
+            return true;
+        } catch (Exception e) {
+            System.out.println("DeleteByQuestion Error: " + e.getMessage());
+        }
+        return false;
+    }
+
+    // Delete answers for all questions belonging to a quiz
+    public boolean deleteByQuiz(int quizId) {
+        String sql = "DELETE FROM answers WHERE question_id IN (SELECT question_id FROM questions WHERE quiz_id = ?)";
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(sql)) {
+            stmt.setInt(1, quizId);
+            stmt.executeUpdate();
+            return true;
+        } catch (Exception e) {
+            System.out.println("DeleteByQuiz Error: " + e.getMessage());
+        }
+        return false;
+    }
+
     private Answer extractAnswer(ResultSet rs) throws SQLException {
         return new Answer(
                 rs.getInt("answer_id"),

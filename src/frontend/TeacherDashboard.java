@@ -104,8 +104,9 @@ public class TeacherDashboard extends JFrame {
             new Color(168, 85, 247),
             e -> SwingUtilities.invokeLater(() -> new ManageQuestionsPage(this).setVisible(true))
         ), cardGbc);
+
         
-        // Row 2: View Results and Change Password (centered)
+
         cardGbc.gridx = 0;
         cardGbc.gridy = 1;
         cardGbc.gridwidth = 2;

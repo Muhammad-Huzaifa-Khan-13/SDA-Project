@@ -14,6 +14,11 @@ public class UserController {
         return userDAO.getAll();
     }
 
+    // Added helper to fetch single user by id
+    public User getUserById(int id) {
+        return userDAO.getById(id);
+    }
+
     /**
      * Delete a user by id. Only an admin (actor) can perform this action.
      */
