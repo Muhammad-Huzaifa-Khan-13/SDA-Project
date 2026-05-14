@@ -8,11 +8,16 @@ import backend.models.Quiz;
 import javax.swing.*;
 import java.awt.*;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
+import javax.swing.SwingWorker;
 
 public class ManageQuizPage extends JDialog {
 
     private CourseController courseController = new CourseController();
     private QuizController quizController = new QuizController();
+    // cache courses to avoid N+1 DB calls from the renderer
+    private Map<Integer, Course> courseCache = new HashMap<>();
 
     private JComboBox<Course> courseCombo;
     private JTextField titleField;
@@ -27,8 +32,8 @@ public class ManageQuizPage extends JDialog {
         setResizable(false);
 
         initUI();
-        loadCourses();
-        loadQuizzes();
+        // load data in background so UI stays responsive
+        loadDataAsync();
     }
 
     private void initUI() {
@@ -64,7 +69,7 @@ public class ManageQuizPage extends JDialog {
 
         quizListModel = new DefaultListModel<>();
         quizList = new JList<>(quizListModel);
-        quizList.setSelectionMode(ListSelectionModel.SINGLE_SELECTION);
+        quizList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
         quizList.setCellRenderer(new DefaultListCellRenderer() {
             @Override
             public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus) {
@@ -74,10 +79,8 @@ public class ManageQuizPage extends JDialog {
                     // Show title and course name (no numeric prefix)
                     String title = q.getTitle() != null ? q.getTitle() : "(no title)";
                     String courseName = "(unknown course)";
-                    try {
-                        backend.models.Course course = courseController.getCourseById(q.getCourseId());
-                        if (course != null && course.getCourseName() != null) courseName = course.getCourseName();
-                    } catch (Exception ignore) {}
+                    Course course = courseCache.get(q.getCourseId());
+                    if (course != null && course.getCourseName() != null) courseName = course.getCourseName();
                     setText(title + " (" + courseName + ")");
                 }
                 return this;
@@ -87,8 +90,8 @@ public class ManageQuizPage extends JDialog {
         root.add(new JScrollPane(quizList), BorderLayout.CENTER);
 
         JPanel bottom = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 12));
-        JButton deleteBtn = new JButton("Delete Selected Quiz");
-        deleteBtn.addActionListener(e -> deleteSelectedQuiz());
+        JButton deleteBtn = new JButton("Delete Selected");
+        deleteBtn.addActionListener(e -> deleteSelectedQuizzes());
         JButton closeBtn = new JButton("Close");
         closeBtn.addActionListener(e -> dispose());
         bottom.add(deleteBtn);
@@ -99,23 +102,66 @@ public class ManageQuizPage extends JDialog {
         add(root);
     }
 
-    private void loadCourses() {
-        try {
-            courseCombo.removeAllItems();
-            List<Course> courses = courseController.getAllCourses();
-            if (courses != null) for (Course c : courses) courseCombo.addItem(c);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Failed to load courses: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
-        }
+    // load courses and quizzes in background to avoid blocking EDT
+    private void loadDataAsync() {
+        setCursor(Cursor.getPredefinedCursor(Cursor.WAIT_CURSOR));
+        // disable inputs while loading
+        setEnabledForAll(this, false);
+
+        new SwingWorker<Void, Void>() {
+            List<Course> courses;
+            List<Quiz> quizzes;
+            Exception error;
+
+            @Override
+            protected Void doInBackground() {
+                try {
+                    courses = courseController.getAllCourses();
+                    quizzes = quizController.getAllQuizzes();
+                } catch (Exception ex) {
+                    error = ex;
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    if (error != null) throw error;
+
+                    // update course cache and combo (deduped by name)
+                    courseCache.clear();
+                    courseCombo.removeAllItems();
+                    java.util.List<Course> dedupedCourses = UIUtils.dedupeCoursesByName(courses);
+                    if (dedupedCourses != null) {
+                        for (Course c : dedupedCourses) {
+                            courseCache.put(c.getCourseId(), c);
+                            courseCombo.addItem(c);
+                        }
+                    }
+
+                    // update quiz list (dedupe by title)
+                    quizListModel.clear();
+                    java.util.List<Quiz> deduped = UIUtils.dedupeQuizzesByTitle(quizzes);
+                    if (deduped != null) {
+                        for (Quiz q : deduped) quizListModel.addElement(q);
+                    }
+                } catch (Exception e) {
+                    JOptionPane.showMessageDialog(ManageQuizPage.this, "Failed to load data: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                } finally {
+                    setCursor(Cursor.getDefaultCursor());
+                    setEnabledForAll(ManageQuizPage.this, true);
+                }
+            }
+        }.execute();
     }
 
-    private void loadQuizzes() {
-        quizListModel.clear();
-        try {
-            List<Quiz> quizzes = quizController.getAllQuizzes();
-            if (quizzes != null) for (Quiz q : quizzes) quizListModel.addElement(q);
-        } catch (Exception e) {
-            JOptionPane.showMessageDialog(this, "Failed to load quizzes: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+    // utility to enable/disable entire dialog recursively (simple approach)
+    private void setEnabledForAll(Container c, boolean enabled) {
+        c.setEnabled(enabled);
+        for (Component comp : c.getComponents()) {
+            comp.setEnabled(enabled);
+            if (comp instanceof Container) setEnabledForAll((Container) comp, enabled);
         }
     }
 
@@ -130,25 +176,32 @@ public class ManageQuizPage extends JDialog {
         if (ok) {
             JOptionPane.showMessageDialog(this, "Quiz created.", "Success", JOptionPane.INFORMATION_MESSAGE);
             titleField.setText("");
-            loadQuizzes();
+            // refresh in background
+            loadDataAsync();
         } else {
             JOptionPane.showMessageDialog(this, "Failed to create quiz.", "Error", JOptionPane.ERROR_MESSAGE);
         }
     }
 
-    private void deleteSelectedQuiz() {
-        Quiz sel = quizList.getSelectedValue();
-        if (sel == null) { JOptionPane.showMessageDialog(this, "Please select a quiz to delete", "Validation", JOptionPane.WARNING_MESSAGE); return; }
-        int res = JOptionPane.showConfirmDialog(this, "Delete selected quiz and all its questions?", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
+    private void deleteSelectedQuizzes() {
+        java.util.List<Quiz> selected = quizList.getSelectedValuesList();
+        if (selected == null || selected.isEmpty()) {
+            JOptionPane.showMessageDialog(this, "Please select one or more quizzes to delete", "Validation", JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        int res = JOptionPane.showConfirmDialog(this, "Delete selected quizzes and all their questions?", "Confirm", JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE);
         if (res != JOptionPane.YES_OPTION) return;
 
-        // Delete associated questions first (so numbering resets when recreated)
-        boolean ok = quizController.deleteQuiz(sel.getQuizId());
-        if (ok) {
-            JOptionPane.showMessageDialog(this, "Quiz deleted.", "Success", JOptionPane.INFORMATION_MESSAGE);
-            loadQuizzes();
-        } else {
-            JOptionPane.showMessageDialog(this, "Failed to delete quiz.", "Error", JOptionPane.ERROR_MESSAGE);
+        boolean anyFailed = false;
+        for (Quiz q : selected) {
+            try {
+                boolean ok = quizController.deleteQuiz(q.getQuizId());
+                if (!ok) anyFailed = true;
+            } catch (Exception ignore) { anyFailed = true; }
         }
+
+        if (anyFailed) JOptionPane.showMessageDialog(this, "Some quizzes may not have been deleted.", "Partial Result", JOptionPane.WARNING_MESSAGE);
+        else JOptionPane.showMessageDialog(this, "Selected quizzes deleted.", "Success", JOptionPane.INFORMATION_MESSAGE);
+        loadDataAsync();
     }
 }

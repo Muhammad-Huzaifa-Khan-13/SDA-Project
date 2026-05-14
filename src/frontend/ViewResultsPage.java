@@ -4,10 +4,12 @@ import backend.controllers.AttemptController;
 import backend.controllers.EvaluationController;
 import backend.controllers.QuizController;
 import backend.controllers.UserController;
+import backend.controllers.CourseController;
 import backend.models.Attempt;
 import backend.models.Grade;
 import backend.models.Quiz;
 import backend.models.User;
+import backend.models.Course;
 
 import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
@@ -21,6 +23,7 @@ public class ViewResultsPage extends JDialog {
     private AttemptController attemptController = new AttemptController();
     private EvaluationController evaluationController = new EvaluationController();
     private UserController userController = new UserController();
+    private CourseController courseController = new CourseController();
 
     private JComboBox<Quiz> quizCombo;
     private DefaultTableModel tableModel;
@@ -73,7 +76,8 @@ public class ViewResultsPage extends JDialog {
 
         root.add(top, BorderLayout.NORTH);
 
-        tableModel = new DefaultTableModel(new Object[]{"Attempt ID", "Student", "Attempt Date", "Score"}, 0) {
+        // show quiz title and course instead of quiz id; each row pertains to the selected quiz
+        tableModel = new DefaultTableModel(new Object[]{"Quiz Title", "Course", "Student", "Attempt Date", "Score"}, 0) {
             @Override
             public boolean isCellEditable(int row, int column) { return false; }
         };
@@ -108,6 +112,15 @@ public class ViewResultsPage extends JDialog {
         try {
             List<Attempt> attempts = attemptController.getAttemptsByQuiz(selected.getQuizId());
             SimpleDateFormat fmt = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+            // resolve course name for the selected quiz
+            String quizTitle = selected.getTitle() != null ? selected.getTitle() : "(no title)";
+            String courseName = "(unknown course)";
+            try {
+                Course c = courseController.getCourseById(selected.getCourseId());
+                if (c != null && c.getCourseName() != null) courseName = c.getCourseName();
+            } catch (Exception ignore) {}
+
             if (attempts != null) {
                 for (Attempt a : attempts) {
                     User student = userController.getUserById(a.getStudentId());
@@ -117,7 +130,7 @@ public class ViewResultsPage extends JDialog {
                     String score = g != null ? String.valueOf(g.getScore()) : "(not graded)";
 
                     String attemptedAt = a.getAttemptDate() != null ? fmt.format(a.getAttemptDate()) : "";
-                    tableModel.addRow(new Object[]{a.getAttemptId(), studentName, attemptedAt, score});
+                    tableModel.addRow(new Object[]{quizTitle, courseName, studentName, attemptedAt, score});
                 }
             }
         } catch (Exception e) {

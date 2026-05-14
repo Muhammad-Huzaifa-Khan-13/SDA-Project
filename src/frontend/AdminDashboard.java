@@ -87,11 +87,11 @@ public class AdminDashboard extends JFrame {
         
         cardGbc.gridx = 1;
         cardsContainer.add(createActionCard(
-            "Manage Quizzes",
-            "Create and organize quiz content",
-            "📝",
+            "Manage Courses",
+            "Create and organize courses",
+            "🏷️",
             new Color(236, 72, 153),
-            e -> SwingUtilities.invokeLater(() -> new CreateQuizPage(this).setVisible(true))
+            e -> SwingUtilities.invokeLater(() -> new ManageCoursesPage(this).setVisible(true))
         ), cardGbc);
         
         cardGbc.gridx = 2;

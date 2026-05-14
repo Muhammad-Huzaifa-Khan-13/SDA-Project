@@ -9,7 +9,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.Comparator;
 import java.util.Date;
 import java.util.List;
 
@@ -117,65 +116,27 @@ public class CreateQuizPage extends JDialog {
 
     private void loadCourses() {
         try {
-            // Load all courses and deduplicate by course name (preserve first occurrence)
+            // Load all courses and dedupe using UIUtils helper
             List<Course> courses = courseController.getAllCourses();
             DefaultComboBoxModel<Course> model = new DefaultComboBoxModel<>();
-
-            java.util.Map<String, Course> unique = new java.util.LinkedHashMap<>();
-            if (courses != null) {
-                for (Course c : courses) {
-                    String name = c.getCourseName() != null ? c.getCourseName().trim().toLowerCase() : null;
-                    if (name != null && !unique.containsKey(name)) {
-                        unique.put(name, c);
-                    }
-                }
+            java.util.List<Course> deduped = UIUtils.dedupeCoursesByName(courses);
+            if (deduped != null) {
+                for (Course c : deduped) model.addElement(c);
             }
-
-            // If no unique courses found, attempt to create defaults only if missing
-            if (unique.isEmpty()) {
+            // If still empty, try creating defaults (existing logic preserved)
+            if (model.getSize() == 0) {
                 int teacherId = Session.getInstance().getCurrentUser() != null ? Session.getInstance().getCurrentUser().getUserId() : 0;
                 String[] defaults = new String[]{"OOP", "Programming Fundamentals", "Data Structures"};
-
-                // Only create defaults that do not already exist (case-insensitive match on name trimmed)
                 for (String name : defaults) {
-                    String key = name.trim().toLowerCase();
-                    boolean exists = unique.containsKey(key);
-                    if (!exists && courses != null) {
-                        for (Course c : courses) {
-                            if (c.getCourseName() != null && c.getCourseName().trim().equalsIgnoreCase(name)) {
-                                exists = true;
-                                unique.put(key, c);
-                                break;
-                            }
-                        }
-                    }
-
-                    if (!exists) {
-                        try {
-                            boolean created = courseController.createCourse(name, teacherId);
-                            if (created) {
-                                // refresh the course list and add the newly created one
-                                List<Course> refreshed = courseController.getAllCourses();
-                                if (refreshed != null) {
-                                    for (Course rc : refreshed) {
-                                        if (rc.getCourseName() != null && rc.getCourseName().trim().equalsIgnoreCase(name) && !unique.containsKey(key)) {
-                                            unique.put(key, rc);
-                                            break;
-                                        }
-                                    }
-                                }
-                            }
-                        } catch (Exception ignore) {
-                            // fall back to placeholder below
-                        }
-                    }
+                    try {
+                        courseController.createCourse(name, teacherId);
+                    } catch (Exception ignore) {}
                 }
+                // refresh
+                List<Course> refreshed = courseController.getAllCourses();
+                deduped = UIUtils.dedupeCoursesByName(refreshed);
+                if (deduped != null) for (Course c : deduped) model.addElement(c);
             }
-
-            // Populate model from unique map
-            for (Course c : unique.values()) model.addElement(c);
-
-            // If still empty for any reason, add placeholders and disable create
             if (model.getSize() == 0) {
                 model.addElement(new Course(0, "(no courses)", 0));
                 createBtn.setEnabled(false);
